@@ -658,6 +658,22 @@ mod tests {
         )
     }
 
+    fn _move_default_post() -> DispatchResult {
+        _move_post(None, None, None)
+    }
+
+    fn _move_post(
+        origin: Option<Origin>,
+        post_id: Option<PostId>,
+        new_space_id: Option<Option<SpaceId>>,
+    ) -> DispatchResult {
+        Posts::move_post(
+            origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
+            post_id.unwrap_or(POST1),
+            new_space_id.unwrap_or(Some(SPACE2)),
+        )
+    }
+
     fn _create_default_comment() -> DispatchResult {
         _create_comment(None, None, None, None)
     }
@@ -1549,6 +1565,110 @@ mod tests {
             assert!(post_history.old_data.space_id.is_none());
             assert_eq!(post_history.old_data.content, Some(self::post_content_ipfs()));
             assert_eq!(post_history.old_data.hidden, Some(false));
+        });
+    }
+
+    // TODO: after merging w/ moderation tests check whether `delete_post_from_space` tests exist
+    #[test]
+    fn move_post_should_work() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_ok!(_create_space(None, None, Some(None), None));
+            assert_ok!(_create_default_post_reaction());
+            assert_ok!(_move_default_post());
+
+            let post: Post<TestRuntime> = Posts::post_by_id(POST1).unwrap();
+            let old_space_id = SPACE1;
+            let new_space_id = post.space_id.unwrap();
+            assert_eq!(new_space_id, SPACE2);
+
+            let old_space = Spaces::space_by_id(old_space_id).unwrap();
+            assert_eq!(old_space.posts_count, 0);
+            assert_eq!(old_space.hidden_posts_count, 0);
+            assert_eq!(old_space.score, 0);
+
+            let new_space = Spaces::space_by_id(new_space_id).unwrap();
+            assert_eq!(new_space.posts_count, 1);
+            assert_eq!(new_space.hidden_posts_count, 0);
+            assert_eq!(new_space.score, post.score);
+
+            assert!(Posts::post_ids_by_space_id(old_space_id).is_empty());
+            assert_eq!(Posts::post_ids_by_space_id(new_space_id), vec![POST1]);
+        });
+    }
+
+    #[test]
+    fn move_hidden_post_should_work() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_ok!(_create_space(None, None, Some(None), None));
+            assert_ok!(_create_default_post_reaction());
+            assert_ok!(_update_post(
+                None,
+                None,
+                Some(self::post_update(
+                    Some(SPACE2),
+                    None,
+                    Some(true)
+                ))
+            ));
+            assert_ok!(_move_default_post());
+
+            let post: Post<TestRuntime> = Posts::post_by_id(POST1).unwrap();
+            let old_space_id = SPACE1;
+            let new_space_id = post.space_id.unwrap();
+            assert_eq!(new_space_id, SPACE2);
+
+            let old_space = Spaces::space_by_id(old_space_id).unwrap();
+            assert_eq!(old_space.posts_count, 0);
+            assert_eq!(old_space.hidden_posts_count, 0);
+            assert_eq!(old_space.score, 0);
+
+            let new_space = Spaces::space_by_id(new_space_id).unwrap();
+            assert_eq!(new_space.posts_count, 1);
+            assert_eq!(new_space.hidden_posts_count, 1);
+            assert_eq!(new_space.score, post.score);
+        });
+    }
+
+    #[test]
+    fn move_hidden_post_should_fail_post_not_found() {
+        ExtBuilder::build().execute_with(|| {
+            assert_noop!(
+                _move_default_post(),
+                PostsError::<TestRuntime>::PostNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn move_hidden_post_should_fail_new_space_not_found() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_noop!(
+                _move_default_post(),
+                SpacesError::<TestRuntime>::SpaceNotFound
+            );
+        });
+    }
+
+    #[test]
+    fn move_hidden_post_should_fail_no_permission_to_create_post() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_ok!(_create_space(Some(Origin::signed(ACCOUNT2)), None, Some(None), None));
+            assert_noop!(
+                _move_default_post(),
+                PostsError::<TestRuntime>::NoPermissionToCreatePosts
+            );
+        });
+    }
+
+    #[test]
+    fn move_hidden_post_should_fail_cannot_move_comment() {
+        ExtBuilder::build_with_comment().execute_with(|| {
+            assert_ok!(_create_space(None, None, Some(None), None));
+
+            assert_noop!(
+                _move_post(None, Some(POST2), None),
+                PostsError::<TestRuntime>::CannotUpdateSpaceIdOnComment
+            );
         });
     }
 
