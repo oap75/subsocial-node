@@ -44,7 +44,7 @@ std = [
     'pallet-space-follows/std',
     'pallet-space-ownership/std',
     'pallet-space-history/std',
-#    'pallet-session-keys/std',
+    'session-keys/std',
 #    'pallet-subscriptions/std',
     'pallet-utils/std',
 ]
@@ -315,10 +315,11 @@ default-features = false
 path = '../pallets/utils'
 version = '0.4.0'
 
-#[dependencies.pallet-session-keys]
-#default-features = false
-#path = '../pallets/session-keys'
-#version = '0.4.0'
+[dependencies.session-keys]
+default-features = false
+package = 'pallet-session-keys'
+path = '../pallets/session-keys'
+version = '0.4.0'
 
 [package]
 name = 'subsocial-runtime'
