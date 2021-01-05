@@ -9,7 +9,7 @@ use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use frame_system::{self as system, ensure_signed};
 
-use df_traits::moderation::{IsAccountBlocked, IsContentBlocked};
+use df_traits::moderation::{IsAccountBlocked, IsContentBlocked, IsPostBlocked};
 use pallet_permissions::SpacePermission;
 use pallet_spaces::{Module as Spaces, Space, SpaceById};
 use pallet_utils::{
@@ -85,6 +85,8 @@ pub trait Trait: system::Trait
     type PostScores: PostScores<Self>;
 
     type AfterPostUpdated: AfterPostUpdated<Self>;
+
+    type IsPostBlocked: IsPostBlocked<PostId=PostId>;
 }
 
 pub trait PostScores<T: Trait> {
@@ -217,13 +219,14 @@ decl_module! {
       Utils::<T>::is_valid_content(content.clone())?;
 
       let new_post_id = Self::next_post_id();
-      let new_post: Post<T> = Post::new(new_post_id, creator.clone(), space_id_opt, extension, content);
+      let new_post: Post<T> = Post::new(new_post_id, creator.clone(), space_id_opt, extension, content.clone());
 
       // Get space from either space_id_opt or Comment if a comment provided
       let space = &mut new_post.get_space()?;
       ensure!(!space.hidden, Error::<T>::CannotCreateInHiddenScope);
 
       ensure!(!T::IsAccountBlocked::is_account_blocked(creator.clone(), space.id), UtilsError::<T>::AccountIsBlocked);
+      ensure!(!T::IsContentBlocked::is_content_blocked(content, space.id), UtilsError::<T>::ContentIsBlocked);
 
       let root_post = &mut new_post.get_root_post()?;
       ensure!(!root_post.hidden, Error::<T>::CannotCreateInHiddenScope);
@@ -273,38 +276,42 @@ decl_module! {
       ensure!(has_updates, Error::<T>::NoUpdatesForPost);
 
       let mut post = Self::require_post(post_id)?;
+      let mut space_opt = post.try_get_space();
 
-      let is_owner = post.is_owner(&editor);
-      let is_comment = post.is_comment();
+      if let Some(space) = &space_opt {
+        ensure!(!T::IsAccountBlocked::is_account_blocked(editor.clone(), space.id), UtilsError::<T>::AccountIsBlocked);
 
-      let permission_to_check: SpacePermission;
-      let permission_error: DispatchError;
+        let is_owner = post.is_owner(&editor);
+        let is_comment = post.is_comment();
 
-      if is_comment {
-        if is_owner {
-          permission_to_check = SpacePermission::UpdateOwnComments;
-          permission_error = Error::<T>::NoPermissionToUpdateOwnComments.into();
-        } else {
-          return Err(Error::<T>::NotACommentAuthor.into());
+        let permission_to_check: SpacePermission;
+        let permission_error: DispatchError;
+
+        if is_comment {
+          if is_owner {
+            permission_to_check = SpacePermission::UpdateOwnComments;
+            permission_error = Error::<T>::NoPermissionToUpdateOwnComments.into();
+          } else {
+            return Err(Error::<T>::NotACommentAuthor.into());
+          }
+        } else { // not a comment
+          if is_owner {
+            permission_to_check = SpacePermission::UpdateOwnPosts;
+            permission_error = Error::<T>::NoPermissionToUpdateOwnPosts.into();
+          } else {
+            permission_to_check = SpacePermission::UpdateAnyPost;
+            permission_error = Error::<T>::NoPermissionToUpdateAnyPost.into();
+          }
         }
-      } else { // not a comment
-        if is_owner {
-          permission_to_check = SpacePermission::UpdateOwnPosts;
-          permission_error = Error::<T>::NoPermissionToUpdateOwnPosts.into();
-        } else {
-          permission_to_check = SpacePermission::UpdateAnyPost;
-          permission_error = Error::<T>::NoPermissionToUpdateAnyPost.into();
-        }
+
+        Spaces::ensure_account_has_space_permission(
+          editor.clone(),
+          space,
+          permission_to_check,
+          permission_error
+        )?;
       }
 
-      Spaces::ensure_account_has_space_permission(
-        editor.clone(),
-        &post.get_space()?,
-        permission_to_check,
-        permission_error
-      )?;
-
-      let mut space_opt: Option<Space<T>> = None;
       let mut is_update_applied = false;
       let mut old_data = PostUpdate::default();
 
@@ -312,8 +319,8 @@ decl_module! {
         if content != post.content {
           Utils::<T>::is_valid_content(content.clone())?;
 
-          if let Some(space_id) = post.try_get_space_id() {
-              ensure!(!T::IsContentBlocked::is_content_blocked(content.clone(), space_id), UtilsError::<T>::ContentIsBlocked);
+          if let Some(space) = &space_opt {
+              ensure!(!T::IsContentBlocked::is_content_blocked(content.clone(), space.id), UtilsError::<T>::ContentIsBlocked);
           }
 
           old_data.content = Some(post.content.clone());
@@ -324,7 +331,7 @@ decl_module! {
 
       if let Some(hidden) = update.hidden {
         if hidden != post.hidden {
-          space_opt = post.try_get_space().map(|mut space| {
+          space_opt = space_opt.map(|mut space| {
             if hidden {
                 space.inc_hidden_posts();
             } else {

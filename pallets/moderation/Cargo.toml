@@ -69,6 +69,10 @@ default-features = false
 path = '../permissions'
 version = '0.4.0'
 
+[dev-dependencies.pallet-profiles]
+default-features = false
+path = "../profiles"
+
 [dependencies.pallet-posts]
 default-features = false
 path = '../posts'
@@ -102,6 +106,16 @@ tag = 'v2.0.0-rc4'
 version = '2.0.0-rc4'
 
 [dev-dependencies.pallet-timestamp]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc4'
+version = '2.0.0-rc4'
+
+[dev-dependencies.pallet-roles]
+default-features = false
+path = "../roles"
+
+[dev-dependencies.pallet-balances]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc4'

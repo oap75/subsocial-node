@@ -30,7 +30,7 @@ std = [
     'pallet-utility/std',
 #    'pallet-faucet/std',
 #    'pallet-donations/std',
-#    'pallet-moderation/std',
+    'pallet-moderation/std',
     'pallet-permissions/std',
     'pallet-posts/std',
     'pallet-post-history/std',
@@ -235,10 +235,10 @@ version = '2.0.0-rc4'
 #path = '../pallets/donations'
 #version = '0.4.0'
 
-#[dependencies.pallet-moderation]
-#default-features = false
-#path = '../pallets/moderation'
-#version = '0.4.0'
+[dependencies.pallet-moderation]
+default-features = false
+path = '../pallets/moderation'
+version = '0.4.0'
 
 [dependencies.pallet-permissions]
 default-features = false
