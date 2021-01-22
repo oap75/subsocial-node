@@ -338,7 +338,7 @@ impl<T: Trait> Module<T> {
         post: &mut Post<T>,
         new_space_id: SpaceId
     ) -> DispatchResult {
-        let old_space_id = post.get_space_id()?;
+        let old_space_id_opt = post.try_get_space_id();
         let new_space = Spaces::<T>::require_space(new_space_id)?;
 
         Spaces::ensure_account_has_space_permission(
@@ -353,12 +353,21 @@ impl<T: Trait> Module<T> {
         match post.extension {
             PostExtension::RegularPost | PostExtension::SharedPost(_) => {
 
-                // Substitute posts count from the old space
-                Self::mutate_posts_count_on_space(
-                    old_space_id,
-                    post,
-                    |counter| *counter = counter.saturating_sub(1)
-                )?;
+                if let Some(old_space_id) = old_space_id_opt {
+                    // Substitute posts count from the old space
+                    Self::mutate_posts_count_on_space(
+                        old_space_id,
+                        post,
+                        |counter| *counter = counter.saturating_sub(1)
+                    )?;
+                    // Substitute score from the old space
+                    Spaces::<T>::mutate_space_by_id(
+                        old_space_id,
+                        |space| space.score = space.score.saturating_sub(post.score)
+                    )?;
+                    PostIdsBySpaceId::mutate(old_space_id, |post_ids| vec_remove_on(post_ids, post.id));
+                }
+
                 // Add posts count to the new space
                 Self::mutate_posts_count_on_space(
                     new_space_id,
@@ -366,11 +375,6 @@ impl<T: Trait> Module<T> {
                     |counter| *counter = counter.saturating_add(1)
                 )?;
 
-                // Substitute score from the old space
-                Spaces::<T>::mutate_space_by_id(
-                    old_space_id,
-                    |space| space.score = space.score.saturating_sub(post.score)
-                )?;
                 // Add score to the new space
                 Spaces::<T>::mutate_space_by_id(
                     new_space_id,
@@ -379,7 +383,6 @@ impl<T: Trait> Module<T> {
 
                 post.space_id = Some(new_space_id);
 
-                PostIdsBySpaceId::mutate(old_space_id, |post_ids| vec_remove_on(post_ids, post.id));
                 PostIdsBySpaceId::mutate(new_space_id, |ids| ids.push(post.id));
                 PostById::<T>::insert(post.id, post);
 
