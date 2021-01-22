@@ -489,7 +489,7 @@ impl pallet_space_ownership::Trait for Runtime {
 }
 
 parameter_types! {
-	pub SpaceCreationFee: Balance = 50 * CENTS;
+	pub const SpaceCreationFee: Balance = 50 * CENTS;
 }
 
 impl pallet_spaces::Trait for Runtime {

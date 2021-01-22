@@ -4,7 +4,7 @@ use codec::{Decode, Encode};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure,
     dispatch::{DispatchError, DispatchResult},
-    traits::{Get, Currency, ExistenceRequirement},
+    traits::{Get, Currency},
 };
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
@@ -175,12 +175,12 @@ decl_module! {
         )?;
       }
 
-      <T as pallet_utils::Trait>::Currency::transfer(
-        &owner,
-        &Utils::<T>::treasury_account(),
-        T::SpaceCreationFee::get(),
-        ExistenceRequirement::KeepAlive
-      )?;
+      // <T as pallet_utils::Trait>::Currency::transfer(
+      //   &owner,
+      //   &Utils::<T>::treasury_account(),
+      //   T::SpaceCreationFee::get(),
+      //   ExistenceRequirement::KeepAlive
+      // )?;
 
       let space_id = Self::next_space_id();
       let new_space = &mut Space::new(space_id, parent_id_opt, owner.clone(), content, handle_opt);
