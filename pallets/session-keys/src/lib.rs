@@ -16,7 +16,7 @@
 use codec::{Decode, Encode};
 use sp_std::prelude::*;
 use sp_runtime::RuntimeDebug;
-use sp_runtime::traits::{Zero, One, Dispatchable, Saturating};
+use sp_runtime::traits::{Zero, Dispatchable, Saturating};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, fail,
     weights::{
@@ -104,6 +104,9 @@ pub trait Trait: system::Trait
 
     /// Base Call filter for the session keys' proxy
     type BaseFilter: Filter<<Self as Trait>::Call>;
+
+    /// The amount of money transferred to session key
+    type BaseSessionKeyBond: Get<BalanceOf<Self>>;
 }
 
 decl_event!(
@@ -167,13 +170,15 @@ decl_module! {
 
         const MaxSessionKeysPerAccount: u16 = T::MaxSessionKeysPerAccount::get();
 
+        const BaseSessionKeyBond: BalanceOf<T> = T::BaseSessionKeyBond::get();
+
         // Initializing errors
         type Error = Error<T>;
 
         // Initializing events
         fn deposit_event() = default;
 
-        /// Add a new SessionKey for `origin` bonding 2 * Existential Deposit to keep session alive
+        /// Add a new SessionKey for `origin` bonding `BaseSessionKeyBond` to keep session alive
         #[weight = 10_000 + T::DbWeight::get().reads_writes(3, 3)]
         fn add_key(origin,
             key_account: T::AccountId,
@@ -269,11 +274,9 @@ decl_module! {
             let call_dispatch_info = call.get_dispatch_info();
             if call_dispatch_info.pays_fee == Pays::Yes {
                 let spent_on_call = Self::get_extrinsic_fees(call.clone());
-                // let spent_on_call = BalanceOf::<T>::saturated_from(call_dispatch_info.weight.into())
-                //     .saturating_mul(BalanceOf::<T>::from(2));
                 <T as transaction_payment::Trait>::Currency::transfer(&real, &key, spent_on_call, ExistenceRequirement::KeepAlive)?;
 
-                // TODO: what if balance left is less than InclusionFee on the next call?
+                // TODO: what if balance left is less than fees on the next call?
 
                 details.spent = details.spent.saturating_add(spent_on_call);
                 details.updated = Some(WhoAndWhen::<T>::new(key.clone()));
@@ -369,7 +372,7 @@ impl<T: Trait> Module<T> {
         <T as transaction_payment::Trait>::Currency::transfer(
             source,
             key_account,
-            One::one(),
+            T::BaseSessionKeyBond::get(),
             ExistenceRequirement::KeepAlive
         )
     }

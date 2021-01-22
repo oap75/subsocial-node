@@ -17,7 +17,7 @@ fn add_key_should_work() {
 
         let account_balance_after_key_created = Balances::free_balance(ACCOUNT1);
         let session_key_balance = Balances::free_balance(ACCOUNT2);
-        assert_eq!(session_key_balance, 1);
+        assert_eq!(session_key_balance, DEFAULT_SESSION_KEY_BALANCE);
         assert_eq!(account_balance_after_key_created, initial_account_balance - session_key_balance);
     });
 }
@@ -155,10 +155,12 @@ fn proxy_should_work() {
         assert_ok!(_default_proxy());
         let account_balance_after_call = Balances::free_balance(ACCOUNT1);
 
-        assert_eq!(account_balance_after_call, account_balance_after_key_created - DEFAULT_SESSION_KEY_BALANCE);
+        let call_fees = SessionKeys::get_extrinsic_fees(Box::new(create_space_proxy_call()));
+        let balance_should_be = account_balance_after_key_created - call_fees;
+        assert_eq!(account_balance_after_call, balance_should_be);
 
         let details = SessionKeys::key_details(ACCOUNT2).unwrap();
-        assert_eq!(details.spent, DEFAULT_SESSION_KEY_BALANCE);
+        assert_eq!(details.spent, call_fees);
     });
 }
 
@@ -193,7 +195,7 @@ fn proxy_should_fail_with_session_key_limit_reached() {
                 None,
                 None,
                 None,
-                None
+                Some(Some(2 * MILLICENTS))
             )
         );
         assert_ok!(_default_proxy());

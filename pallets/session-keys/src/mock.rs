@@ -24,10 +24,11 @@ use pallet_spaces::Call as SpacesCall;
 use frame_support::traits::Currency;
 pub use transaction_payment::{Multiplier, TargetedFeeAdjustment};
 
+// TODO: replace with imported constants from Runtime
 pub const SMNS: Balance = 1_000_000_000_000;
 pub const DOLLARS: Balance = SMNS;             // 1_000_000_000_000
-pub const CENTS: Balance = DOLLARS / 100;
-pub const MILLICENTS: Balance = CENTS / 1_000;
+pub const CENTS: Balance = DOLLARS / 100;      // 10_000_000_000
+pub const MILLICENTS: Balance = CENTS / 1_000; // 10_000_000
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
@@ -78,8 +79,9 @@ impl system::Trait for Test {
     type OnKilledAccount = ();
 }
 
+pub(crate) const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 parameter_types! {
-        pub const ExistentialDeposit: u64 = 1;
+        pub const ExistentialDeposit: u64 = EXISTENTIAL_DEPOSIT;
     }
 
 impl pallet_balances::Trait for Test {
@@ -241,6 +243,7 @@ impl transaction_payment::Trait for Test {
 
 parameter_types! {
     pub const MaxSessionKeysPerAccount: u16 = 2;
+    pub const BaseSessionKeyBond: Balance = DEFAULT_SESSION_KEY_BALANCE;
 }
 
 impl Trait for Test {
@@ -248,6 +251,7 @@ impl Trait for Test {
     type Call = Call;
     type MaxSessionKeysPerAccount = MaxSessionKeysPerAccount;
     type BaseFilter = ();
+    type BaseSessionKeyBond = BaseSessionKeyBond;
 }
 
 pub(crate) type System = system::Module<Test>;
@@ -284,7 +288,7 @@ impl ExtBuilder {
         ext.execute_with(|| {
             System::set_block_number(1);
 
-            Balances::make_free_balance_be(&ACCOUNT1, 1_000_000_000);
+            Balances::make_free_balance_be(&ACCOUNT1, 10 * DOLLARS);
         });
 
         ext
@@ -296,11 +300,15 @@ pub(crate) const ACCOUNT2: AccountId = 2;
 pub(crate) const ACCOUNT3: AccountId = 3;
 pub(crate) const ACCOUNT4: AccountId = 4;
 
-pub(crate) const DEFAULT_SESSION_KEY_BALANCE: Balance = 600_000_000;
+pub(crate) const DEFAULT_SESSION_KEY_BALANCE: Balance = 1 * DOLLARS;
 pub(crate) const BLOCK_NUMBER: BlockNumber = 20;
 
 pub(crate) fn valid_content_ipfs_1() -> Content {
     Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec())
+}
+
+pub(crate) fn create_space_proxy_call() -> Call {
+    Call::Spaces(SpacesCall::create_space(Some(ACCOUNT1), None, valid_content_ipfs_1()))
 }
 
 pub(crate) fn _add_default_key() -> DispatchResult { _add_key(None, None, None, None)}
@@ -349,6 +357,6 @@ pub(crate) fn _proxy(
 ) -> DispatchResult {
     SessionKeys::proxy(
         origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
-        Box::new(call.unwrap_or(Call::Spaces(SpacesCall::create_space(Some(ACCOUNT1), None, valid_content_ipfs_1())))),
+        Box::new(call.unwrap_or(create_space_proxy_call())),
     )
 }
