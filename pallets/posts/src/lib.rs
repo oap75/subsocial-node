@@ -378,6 +378,10 @@ decl_module! {
       let old_space_id = post.space_id;
 
       if let Some(space_id) = new_space_id {
+        ensure!(!T::IsAccountBlocked::is_account_blocked(who.clone(), space_id), UtilsError::<T>::AccountIsBlocked);
+        ensure!(!T::IsContentBlocked::is_content_blocked(post.content.clone(), space_id), UtilsError::<T>::ContentIsBlocked);
+        ensure!(!T::IsPostBlocked::is_post_blocked(post_id, space_id), UtilsError::<T>::PostIsBlocked);
+
         Self::move_post_to_space(who.clone(), post, space_id)?;
       } else {
         Self::delete_post_from_space(post_id)?;

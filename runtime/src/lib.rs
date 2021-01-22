@@ -414,8 +414,8 @@ impl pallet_roles::Trait for Runtime {
 	type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
 	type Spaces = Spaces;
 	type SpaceFollows = SpaceFollows;
-	type IsAccountBlocked = ()/*Moderation*/;
-	type IsContentBlocked = ()/*Moderation*/;
+	type IsAccountBlocked = Moderation;
+	type IsContentBlocked = Moderation;
 }
 
 parameter_types! {
@@ -498,8 +498,8 @@ impl pallet_spaces::Trait for Runtime {
 	type SpaceFollows = SpaceFollows;
 	type BeforeSpaceCreated = SpaceFollows;
 	type AfterSpaceUpdated = SpaceHistory;
-	type IsAccountBlocked = ()/*Moderation*/;
-	type IsContentBlocked = ()/*Moderation*/;
+	type IsAccountBlocked = Moderation;
+	type IsContentBlocked = Moderation;
 	type SpaceCreationFee = SpaceCreationFee;
 }
 
