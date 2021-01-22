@@ -448,6 +448,32 @@ impl pallet_scores::Trait for Runtime {
 	type DownvoteCommentActionWeight = DownvoteCommentActionWeight;
 }
 
+parameter_types! {
+	/// Minimum space owners allowed.
+	pub const MinSpaceOwners: u16 = 1;
+
+	/// Maximum space owners allowed.
+	pub const MaxSpaceOwners: u16 = 10;
+
+	/// Maximum length of change notes.
+	pub const MaxChangeNotesLength: u16 = 128;
+
+	/// Expiration time for change proposal.
+	pub const BlocksToLive: BlockNumber = 5 * DAYS;
+
+	/// Period in blocks for which change proposal can remain in a pending state until deleted.
+	pub const DeleteExpiredChangesPeriod: BlockNumber = 1 * HOURS;
+}
+
+impl pallet_space_multi_ownership::Trait for Runtime {
+	type Event = Event;
+	type MinSpaceOwners = MinSpaceOwners;
+	type MaxSpaceOwners = MaxSpaceOwners;
+	type MaxChangeNotesLength = MaxChangeNotesLength;
+	type BlocksToLive = BlocksToLive;
+	type DeleteExpiredChangesPeriod = DeleteExpiredChangesPeriod;
+}
+
 parameter_types! {}
 
 impl pallet_space_follows::Trait for Runtime {
@@ -590,6 +616,7 @@ construct_runtime!(
 		SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
 		SpaceHistory: pallet_space_history::{Module, Storage},
 		SpaceOwnership: pallet_space_ownership::{Module, Call, Storage, Event<T>},
+		SpaceMultiOwnership: pallet_space_multi_ownership::{Module, Call, Storage, Event<T>},
 		Spaces: pallet_spaces::{Module, Call, Storage, Event<T>, Config<T>},
 		Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
 

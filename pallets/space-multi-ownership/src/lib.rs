@@ -118,7 +118,7 @@ decl_error! {
 
 // This pallet's storage items.
 decl_storage! {
-  trait Store for Module<T: Trait> as SpaceOwnersModule {
+  trait Store for Module<T: Trait> as SpaceMultiOwnershipModule {
     SpaceOwnersBySpaceById get(fn space_owners_by_space_id):
       map hasher(twox_64_concat) SpaceId => Option<SpaceOwners<T>>;
 

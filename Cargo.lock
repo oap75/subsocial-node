@@ -3438,6 +3438,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-space-multi-ownership"
+version = "0.4.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-timestamp",
+ "pallet-utils",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-space-ownership"
 version = "0.4.0"
 dependencies = [
@@ -6323,6 +6339,7 @@ dependencies = [
  "pallet-session-keys",
  "pallet-space-follows",
  "pallet-space-history",
+ "pallet-space-multi-ownership",
  "pallet-space-ownership",
  "pallet-spaces",
  "pallet-sudo",
