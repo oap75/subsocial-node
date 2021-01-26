@@ -257,13 +257,6 @@ decl_module! {
             let real = details.owner();
             let can_spend: BalanceOf<T>;
 
-            // TODO get limit from account settings
-
-            if let Some(limit) = details.limit {
-                can_spend = limit.saturating_sub(details.spent);
-                ensure!(can_spend > Zero::zero(), Error::<T>::SessionKeyLimitReached);
-            }
-
             // TODO check that this call is among allowed calls per this account/session key.
             let mut origin: T::Origin = frame_system::RawOrigin::Signed(real.clone()).into();
 			origin.add_filter(move |c: &<T as frame_system::Trait>::Call| {
@@ -274,6 +267,13 @@ decl_module! {
             let call_dispatch_info = call.get_dispatch_info();
             if call_dispatch_info.pays_fee == Pays::Yes {
                 let spent_on_call = Self::get_extrinsic_fees(call.clone());
+
+                // TODO get limit from account settings
+                if let Some(limit) = details.limit {
+                    can_spend = limit.saturating_sub(details.spent);
+                    ensure!(can_spend >= spent_on_call, Error::<T>::SessionKeyLimitReached);
+                }
+
                 <T as transaction_payment::Trait>::Currency::transfer(&real, &key, spent_on_call, ExistenceRequirement::KeepAlive)?;
 
                 // TODO: what if balance left is less than fees on the next call?
