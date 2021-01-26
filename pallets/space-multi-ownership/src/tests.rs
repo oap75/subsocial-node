@@ -2,10 +2,19 @@ use crate::*;
 
 use sp_core::H256;
 use sp_io::TestExternalities;
+use sp_std::iter::FromIterator;
 use frame_support::{impl_outer_origin, assert_ok, assert_noop, parameter_types, weights::Weight, dispatch::DispatchResult};
 use sp_runtime::{
   traits::{BlakeTwo256, IdentityLookup}, testing::Header, Perbill,
 };
+
+use pallet_permissions::{
+  SpacePermission as SP,
+  SpacePermissionSet,
+  SpacePermissions,
+};
+
+use pallet_spaces::{Error as SpacesError};
 
 impl_outer_origin! {
   pub enum Origin for Test {}
@@ -75,6 +84,117 @@ parameter_types! {
   pub const MaxHandleLen: u32 = 50;
 }
 
+parameter_types! {
+      pub DefaultSpacePermissions: SpacePermissions = SpacePermissions {
+
+        // No permissions disabled by default
+        none: None,
+
+        everyone: Some(SpacePermissionSet::from_iter(vec![
+            SP::UpdateOwnSubspaces,
+            SP::DeleteOwnSubspaces,
+            SP::HideOwnSubspaces,
+
+            SP::UpdateOwnPosts,
+            SP::DeleteOwnPosts,
+            SP::HideOwnPosts,
+
+            SP::CreateComments,
+            SP::UpdateOwnComments,
+            SP::DeleteOwnComments,
+            SP::HideOwnComments,
+
+            SP::Upvote,
+            SP::Downvote,
+            SP::Share,
+        ].into_iter())),
+
+        // Followers can do everything that everyone else can.
+        follower: None,
+
+        space_owner: Some(SpacePermissionSet::from_iter(vec![
+            SP::ManageRoles,
+            SP::RepresentSpaceInternally,
+            SP::RepresentSpaceExternally,
+            SP::OverrideSubspacePermissions,
+            SP::OverridePostPermissions,
+
+            SP::CreateSubspaces,
+            SP::CreatePosts,
+
+            SP::UpdateSpace,
+            SP::UpdateAnySubspace,
+            SP::UpdateAnyPost,
+
+            SP::DeleteAnySubspace,
+            SP::DeleteAnyPost,
+
+            SP::HideAnySubspace,
+            SP::HideAnyPost,
+            SP::HideAnyComment,
+
+            SP::SuggestEntityStatus,
+            SP::UpdateEntityStatus,
+
+            SP::UpdateSpaceSettings,
+        ].into_iter())),
+      };
+    }
+
+impl pallet_permissions::Trait for Test {
+  type DefaultSpacePermissions = DefaultSpacePermissions;
+}
+
+parameter_types! {}
+
+impl pallet_profiles::Trait for Test {
+  type Event = ();
+  type AfterProfileUpdated = ();
+}
+
+parameter_types! {}
+
+impl pallet_space_follows::Trait for Test {
+  type Event = ();
+  type BeforeSpaceFollowed = ();
+  type BeforeSpaceUnfollowed = ();
+}
+
+parameter_types! {
+  pub const MaxUsersToProcessPerDeleteRole: u16 = 40;
+}
+
+impl pallet_roles::Trait for Test {
+  type Event = ();
+  type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
+  type Spaces = Spaces;
+  type SpaceFollows = SpaceFollows;
+  type IsAccountBlocked = Self;
+  type IsContentBlocked = ();
+}
+
+impl df_traits::moderation::IsAccountBlocked for Test {
+  type AccountId = u64;
+
+  fn is_account_blocked(_account: Self::AccountId, _scope: SpaceId) -> bool {
+    false
+  }
+}
+
+parameter_types! {}
+
+impl pallet_spaces::Trait for Test {
+  type Event = ();
+  type Roles = Roles;
+  type SpaceFollows = SpaceFollows;
+  type BeforeSpaceCreated = SpaceFollows;
+  type AfterSpaceUpdated = ();
+  type IsAccountBlocked = Self;
+  type IsContentBlocked = ();
+  type SpaceCreationFee = ();
+  type IsSpaceOwner = MultiOwnership;
+}
+
 impl pallet_utils::Trait for Test {
   type Event = ();
   type Currency = Balances;
@@ -102,6 +222,9 @@ impl Trait for Test {
 type MultiOwnership = Module<Test>;
 type Balances = pallet_balances::Module<Test>;
 type System = system::Module<Test>;
+type SpaceFollows = pallet_space_follows::Module<Test>;
+type Spaces = pallet_spaces::Module<Test>;
+type Roles = pallet_roles::Module<Test>;
 
 pub struct ExtBuilder;
 
@@ -487,7 +610,7 @@ fn propose_change_should_fail_not_a_space_owner() {
       Some(vec![]),
       Some(Some(2)),
       None
-     ), Error::<Test>::NotASpaceOwner);
+     ), SpacesError::<Test>::NotASpaceOwner);
   });
 }
 
@@ -593,7 +716,7 @@ fn confirm_change_should_fail_not_a_space_owner() {
       Some(Origin::signed(ACCOUNT3)),
       None,
       None
-     ), Error::<Test>::NotASpaceOwner);
+     ), SpacesError::<Test>::NotASpaceOwner);
   });
 }
 
@@ -659,6 +782,6 @@ fn cancel_proposal_should_fail_not_a_space_owner() {
       Some(Origin::signed(ACCOUNT3)),
       None,
       None
-     ), Error::<Test>::NotASpaceOwner);
+     ), SpacesError::<Test>::NotASpaceOwner);
   });
 }

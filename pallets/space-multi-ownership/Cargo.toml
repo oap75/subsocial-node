@@ -20,6 +20,7 @@ std = [
     'frame-system/std',
     'pallet-timestamp/std',
     'df-traits/std',
+    'pallet-spaces/std',
     'pallet-utils/std',
 ]
 
@@ -64,6 +65,11 @@ default-features = false
 path = '../traits'
 version = '0.4.0'
 
+[dependencies.pallet-spaces]
+default-features = false
+path = '../spaces'
+version = '0.4.0'
+
 [dependencies.pallet-utils]
 default-features = false
 path = '../utils'
@@ -86,3 +92,23 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc4'
 version = '2.0.0-rc4'
+
+[dev-dependencies.pallet-moderation]
+default-features = false
+path = "../moderation"
+
+[dev-dependencies.pallet-permissions]
+default-features = false
+path = "../permissions"
+
+[dev-dependencies.pallet-profiles]
+default-features = false
+path = "../profiles"
+
+[dev-dependencies.pallet-roles]
+default-features = false
+path = "../roles"
+
+[dev-dependencies.pallet-space-follows]
+default-features = false
+path = "../space-follows"
