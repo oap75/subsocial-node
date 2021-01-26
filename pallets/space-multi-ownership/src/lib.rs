@@ -11,6 +11,7 @@ use frame_support::{
 };
 use frame_system::{self as system, ensure_signed};
 
+use df_traits::SpaceOwnershipCheck;
 use pallet_utils::{SpaceId, WhoAndWhen};
 
 pub mod functions;

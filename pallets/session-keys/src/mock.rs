@@ -184,6 +184,18 @@ impl df_traits::moderation::IsAccountBlocked for Test {
     }
 }
 
+impl df_traits::SpaceOwnershipCheck for Test {
+    type AccountId = u64;
+
+    fn is_space_owner(account: Self::AccountId, space_id: SpaceId) -> bool {
+        return if let Some(space) = Spaces::require_space(space_id).ok() {
+            space.owner == account
+        } else {
+            false
+        }
+    }
+}
+
 parameter_types! {}
 
 impl pallet_spaces::Trait for Test {
@@ -195,6 +207,7 @@ impl pallet_spaces::Trait for Test {
     type IsAccountBlocked = Self;
     type IsContentBlocked = ();
     type SpaceCreationFee = ();
+    type IsSpaceOwner = Self;
 }
 
 parameter_types! {}

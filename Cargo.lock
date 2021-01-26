@@ -874,6 +874,7 @@ dependencies = [
 name = "df-integration-tests"
 version = "0.4.0"
 dependencies = [
+ "df-traits",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -3441,6 +3442,7 @@ dependencies = [
 name = "pallet-space-multi-ownership"
 version = "0.4.0"
 dependencies = [
+ "df-traits",
  "frame-support",
  "frame-system",
  "pallet-balances",

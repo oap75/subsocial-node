@@ -17,7 +17,7 @@ mod tests {
         testing::Header,
         Perbill,
     };
-    use frame_system::{self as system};
+    use frame_system as system;
 
     use pallet_permissions::{
         SpacePermission,
@@ -271,6 +271,18 @@ mod tests {
         type Event = ();
     }
 
+    impl df_traits::SpaceOwnershipCheck for TestRuntime {
+        type AccountId = u64;
+
+        fn is_space_owner(account: Self::AccountId, space_id: SpaceId) -> bool {
+            return if let Some(space) = Spaces::require_space(space_id).ok() {
+                space.owner == account
+            } else {
+                false
+            }
+        }
+    }
+
     parameter_types! {}
 
     impl pallet_spaces::Trait for TestRuntime {
@@ -282,6 +294,7 @@ mod tests {
         type IsAccountBlocked = Moderation;
         type IsContentBlocked = Moderation;
         type SpaceCreationFee = ();
+        type IsSpaceOwner = Self;
     }
 
     parameter_types! {}

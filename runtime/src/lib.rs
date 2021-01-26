@@ -501,6 +501,7 @@ impl pallet_spaces::Trait for Runtime {
 	type IsAccountBlocked = Moderation;
 	type IsContentBlocked = Moderation;
 	type SpaceCreationFee = SpaceCreationFee;
+	type IsSpaceOwner = SpaceMultiOwnership;
 }
 
 parameter_types! {}

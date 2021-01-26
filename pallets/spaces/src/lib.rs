@@ -11,7 +11,7 @@ use sp_std::prelude::*;
 use frame_system::{self as system, ensure_signed};
 
 use df_traits::{
-    SpaceForRoles, SpaceForRolesProvider, PermissionChecker, SpaceFollowsProvider,
+    SpaceForRoles, SpaceForRolesProvider, PermissionChecker, SpaceFollowsProvider, SpaceOwnershipCheck,
     moderation::{IsAccountBlocked, IsContentBlocked},
 };
 use pallet_permissions::{SpacePermission, SpacePermissions, SpacePermissionsContext};
@@ -74,6 +74,8 @@ pub trait Trait: system::Trait
     type IsContentBlocked: IsContentBlocked;
 
     type SpaceCreationFee: Get<BalanceOf<Self>>;
+
+    type IsSpaceOwner: SpaceOwnershipCheck<AccountId=Self::AccountId>;
 }
 
 decl_error! {
@@ -346,7 +348,7 @@ impl<T: Trait> Space<T> {
     }
 
     pub fn is_owner(&self, account: &T::AccountId) -> bool {
-        self.owner == *account
+        self.owner == *account || T::IsSpaceOwner::is_space_owner(account.clone(), self.id)
     }
 
     pub fn is_follower(&self, account: &T::AccountId) -> bool {
