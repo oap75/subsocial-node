@@ -1,12 +1,17 @@
-use crate::{Module, Trait, EntityId, EntityStatus, ReportId, SpaceModerationSettingsUpdate};
+use crate::{Module, Trait};
+
+use sp_std::iter::FromIterator;
+use sp_io::TestExternalities;
 use sp_core::H256;
-use frame_support::{
-    impl_outer_origin, parameter_types, assert_ok, StorageMap,
-    weights::Weight,
-    dispatch::{DispatchResult},
-};
 use sp_runtime::{
-    traits::{BlakeTwo256, IdentityLookup}, testing::Header, Perbill,
+    traits::{BlakeTwo256, IdentityLookup}, testing::Header, Perbill, Perquintill, FixedPointNumber,
+};
+
+use frame_system as system;
+use frame_support::{
+    impl_outer_origin, impl_outer_dispatch, parameter_types,
+    weights::{Weight, IdentityFee},
+    dispatch::{DispatchResult},
 };
 
 use pallet_permissions::{
@@ -14,17 +19,27 @@ use pallet_permissions::{
     SpacePermissionSet,
     SpacePermissions,
 };
-
-use frame_system as system;
-use sp_std::iter::FromIterator;
-use sp_io::TestExternalities;
-
 use pallet_utils::{Content, SpaceId};
-use pallet_spaces::{Space, SpaceById};
-use pallet_posts::{Post, PostId, PostById, PostExtension};
+use pallet_spaces::Call as SpacesCall;
+use frame_support::traits::Currency;
+pub use transaction_payment::{Multiplier, TargetedFeeAdjustment};
+
+// TODO: replace with imported constants from Runtime
+pub const SMNS: Balance = 1_000_000_000_000;
+pub const DOLLARS: Balance = SMNS;             // 1_000_000_000_000
+pub const CENTS: Balance = DOLLARS / 100;      // 10_000_000_000
+pub const MILLICENTS: Balance = CENTS / 1_000; // 10_000_000
 
 impl_outer_origin! {
 	pub enum Origin for Test {}
+}
+
+impl_outer_dispatch! {
+	pub enum Call for Test where origin: Origin {
+		frame_system::System,
+		pallet_balances::Balances,
+		pallet_spaces::Spaces,
+	}
 }
 
 #[derive(Clone, Eq, PartialEq)]
@@ -40,7 +55,7 @@ parameter_types! {
 impl system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
-    type Call = ();
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -64,6 +79,19 @@ impl system::Trait for Test {
     type OnKilledAccount = ();
 }
 
+pub(crate) const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
+parameter_types! {
+        pub const ExistentialDeposit: u64 = EXISTENTIAL_DEPOSIT;
+    }
+
+impl pallet_balances::Trait for Test {
+    type Balance = u64;
+    type DustRemoval = ();
+    type Event = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+}
+
 parameter_types! {
   pub const MinimumPeriod: u64 = 5;
 }
@@ -75,6 +103,7 @@ impl pallet_timestamp::Trait for Test {
 }
 
 parameter_types! {
+  pub const IpfsCidLen: u32 = 46;
   pub const MinHandleLen: u32 = 5;
   pub const MaxHandleLen: u32 = 50;
 }
@@ -84,18 +113,6 @@ impl pallet_utils::Trait for Test {
     type Currency = Balances;
     type MinHandleLen = MinHandleLen;
     type MaxHandleLen = MaxHandleLen;
-}
-
-parameter_types! {
-        pub const ExistentialDeposit: u64 = 1;
-    }
-
-impl pallet_balances::Trait for Test {
-    type Balance = u64;
-    type DustRemoval = ();
-    type Event = ();
-    type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = System;
 }
 
 parameter_types! {
@@ -159,6 +176,14 @@ impl pallet_permissions::Trait for Test {
     type DefaultSpacePermissions = DefaultSpacePermissions;
 }
 
+impl df_traits::moderation::IsAccountBlocked for Test {
+    type AccountId = u64;
+
+    fn is_account_blocked(_account: Self::AccountId, _scope: SpaceId) -> bool {
+        false
+    }
+}
+
 impl df_traits::SpaceOwnershipCheck for Test {
     type AccountId = u64;
 
@@ -179,8 +204,8 @@ impl pallet_spaces::Trait for Test {
     type SpaceFollows = SpaceFollows;
     type BeforeSpaceCreated = SpaceFollows;
     type AfterSpaceUpdated = ();
-    type IsAccountBlocked = Moderation;
-    type IsContentBlocked = Moderation;
+    type IsAccountBlocked = Self;
+    type IsContentBlocked = ();
     type SpaceCreationFee = ();
     type IsSpaceOwner = Self;
 }
@@ -194,18 +219,6 @@ impl pallet_space_follows::Trait for Test {
 }
 
 parameter_types! {
-        pub const MaxCommentDepth: u32 = 10;
-    }
-
-impl pallet_posts::Trait for Test {
-    type Event = ();
-    type MaxCommentDepth = MaxCommentDepth;
-    type PostScores = ();
-    type AfterPostUpdated = ();
-    type IsPostBlocked = Moderation;
-}
-
-parameter_types! {
         pub const MaxUsersToProcessPerDeleteRole: u16 = 40;
     }
 
@@ -214,8 +227,8 @@ impl pallet_roles::Trait for Test {
     type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
     type Spaces = Spaces;
     type SpaceFollows = SpaceFollows;
-    type IsAccountBlocked = Moderation;
-    type IsContentBlocked = Moderation;
+    type IsAccountBlocked = Self;
+    type IsContentBlocked = ();
 }
 
 parameter_types! {}
@@ -226,23 +239,44 @@ impl pallet_profiles::Trait for Test {
 }
 
 parameter_types! {
-	pub const DefaultAutoblockThreshold: u16 = 20;
+	pub const TransactionByteFee: Balance = 1 * MILLICENTS;
+	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
+	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
+	pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
+}
+
+impl transaction_payment::Trait for Test {
+    type Currency = Balances;
+    type OnTransactionPayment = ();
+    type TransactionByteFee = TransactionByteFee;
+    type WeightToFee = IdentityFee<Balance>;
+    type FeeMultiplierUpdate =
+    TargetedFeeAdjustment<Self, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+}
+
+parameter_types! {
+    pub const MaxSessionKeysPerAccount: u16 = 2;
+    pub const BaseSessionKeyBond: Balance = DEFAULT_SESSION_KEY_BALANCE;
 }
 
 impl Trait for Test {
     type Event = ();
-    type DefaultAutoblockThreshold = DefaultAutoblockThreshold;
+    type Call = Call;
+    type MaxSessionKeysPerAccount = MaxSessionKeysPerAccount;
+    type BaseFilter = ();
+    type BaseSessionKeyBond = BaseSessionKeyBond;
 }
 
-type System = system::Module<Test>;
-pub(crate) type Moderation = Module<Test>;
+pub(crate) type System = system::Module<Test>;
+pub(crate) type SessionKeys = Module<Test>;
+pub(crate) type Balances = pallet_balances::Module<Test>;
 type SpaceFollows = pallet_space_follows::Module<Test>;
-type Balances = pallet_balances::Module<Test>;
 type Spaces = pallet_spaces::Module<Test>;
 type Roles = pallet_roles::Module<Test>;
 
 pub type AccountId = u64;
-pub type AutoblockThreshold = u16;
+pub(crate) type BlockNumber = u64;
+pub(crate) type Balance = u64;
 
 pub struct ExtBuilder;
 
@@ -258,7 +292,7 @@ impl ExtBuilder {
         ext
     }
 
-    pub fn build_with_space_and_post() -> TestExternalities {
+    pub fn build_with_balance() -> TestExternalities {
         let storage = system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
@@ -267,39 +301,7 @@ impl ExtBuilder {
         ext.execute_with(|| {
             System::set_block_number(1);
 
-            let space = Space::<Test>::new(SPACE1, None, ACCOUNT1, Content::None, None);
-            SpaceById::insert(space.id, space);
-            let post = Post::<Test>::new(
-                POST1, ACCOUNT1, Some(SPACE1), PostExtension::SharedPost(POST1), valid_content_ipfs_1());
-            PostById::insert(post.id, post);
-        });
-
-        ext
-    }
-
-    pub fn build_with_report_no_space() -> TestExternalities {
-        let storage = system::GenesisConfig::default()
-            .build_storage::<Test>()
-            .unwrap();
-
-        let mut ext = TestExternalities::from(storage);
-        ext.execute_with(|| {
-            System::set_block_number(1);
-
-            let space = Space::<Test>::new(SPACE1, None, ACCOUNT1, Content::None, None);
-            SpaceById::insert(space.id, space);
-            let post = Post::<Test>::new(
-                POST1,
-                ACCOUNT1,
-                Some(SPACE1),
-                PostExtension::SharedPost(POST1),
-                valid_content_ipfs_1(),
-            );
-            PostById::insert(post.id, post);
-
-            assert_ok!(_report_default_entity());
-
-            SpaceById::<Test>::remove(SPACE1);
+            Balances::make_free_balance_be(&ACCOUNT1, 10 * DOLLARS);
         });
 
         ext
@@ -308,120 +310,66 @@ impl ExtBuilder {
 
 pub(crate) const ACCOUNT1: AccountId = 1;
 pub(crate) const ACCOUNT2: AccountId = 2;
-pub(crate) const POST1: PostId = 1;
-pub(crate) const SPACE1: SpaceId = 1;
-pub(crate) const SPACE2: SpaceId = 2;
-pub(crate) const REPORT1: ReportId = 1;
-pub(crate) const REPORT2: ReportId = 2;
-pub(crate) const AUTOBLOCK_THRESHOLD: AutoblockThreshold = 5;
+pub(crate) const ACCOUNT3: AccountId = 3;
+pub(crate) const ACCOUNT4: AccountId = 4;
 
+pub(crate) const DEFAULT_SESSION_KEY_BALANCE: Balance = 1 * DOLLARS;
+pub(crate) const BLOCK_NUMBER: BlockNumber = 20;
 
 pub(crate) fn valid_content_ipfs_1() -> Content {
     Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec())
 }
 
-pub(crate) fn invalid_content_ipfs() -> Content {
-    Content::IPFS(b"QmRAQB6DaazhR8".to_vec())
+pub(crate) fn create_space_proxy_call() -> Call {
+    Call::Spaces(SpacesCall::create_space(Some(ACCOUNT1), None, valid_content_ipfs_1()))
 }
 
-pub(crate) const fn default_moderation_settings_update() -> SpaceModerationSettingsUpdate {
-    SpaceModerationSettingsUpdate {
-        autoblock_threshold: Some(Some(AUTOBLOCK_THRESHOLD))
-    }
-}
+pub(crate) fn _add_default_key() -> DispatchResult { _add_key(None, None, None, None)}
 
-pub(crate) const fn empty_moderation_settings_update() -> SpaceModerationSettingsUpdate {
-    SpaceModerationSettingsUpdate {
-        autoblock_threshold: None
-    }
-}
-
-pub(crate) fn _report_default_entity() -> DispatchResult {
-    _report_entity(None, None, None, None)
-}
-
-pub(crate) fn _report_entity(
+pub(crate) fn _add_key(
     origin: Option<Origin>,
-    entity: Option<EntityId<AccountId>>,
-    scope: Option<SpaceId>,
-    reason: Option<Content>,
+    key_account: Option<AccountId>,
+    time_to_live: Option<BlockNumber>,
+    limit: Option<Option<Balance>>,
 ) -> DispatchResult {
-    Moderation::report_entity(
+    SessionKeys::add_key(
         origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-        entity.unwrap_or(EntityId::Post(POST1)),
-        scope.unwrap_or(SPACE1),
-        reason.unwrap_or_else(|| self::valid_content_ipfs_1()),
+        key_account.unwrap_or(ACCOUNT2),
+        time_to_live.unwrap_or(BLOCK_NUMBER),
+        limit.unwrap_or(Some(DEFAULT_SESSION_KEY_BALANCE)),
     )
 }
 
-pub(crate) fn _suggest_default_entity_status() -> DispatchResult {
-    _suggest_entity_status(None, None, None, None, None)
-}
+pub(crate) fn _remove_default_key() -> DispatchResult { _remove_key(None, None)}
 
-pub(crate) fn _suggest_entity_status(
+pub(crate) fn _remove_key(
     origin: Option<Origin>,
-    entity: Option<EntityId<AccountId>>,
-    scope: Option<SpaceId>,
-    status: Option<Option<EntityStatus>>,
-    report_id_opt: Option<Option<ReportId>>,
+    key_account: Option<AccountId>,
 ) -> DispatchResult {
-    Moderation::suggest_entity_status(
+    SessionKeys::remove_key(
         origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-        entity.unwrap_or(EntityId::Post(POST1)),
-        scope.unwrap_or(SPACE1),
-        status.unwrap_or(Some(EntityStatus::Blocked)),
-        report_id_opt.unwrap_or(Some(REPORT1)),
+        key_account.unwrap_or(ACCOUNT2),
     )
 }
 
-pub(crate) fn _update_default_entity_status() -> DispatchResult {
-    _update_entity_status(None, None, None, None)
-}
+pub(crate) fn _remove_default_keys() -> DispatchResult { _remove_keys(None)}
 
-pub(crate) fn _update_entity_status(
-    origin: Option<Origin>,
-    entity: Option<EntityId<AccountId>>,
-    scope: Option<SpaceId>,
-    status_opt: Option<Option<EntityStatus>>,
+pub(crate) fn _remove_keys(
+    origin: Option<Origin>
 ) -> DispatchResult {
-    Moderation::update_entity_status(
-        origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-        entity.unwrap_or(EntityId::Post(POST1)),
-        scope.unwrap_or(SPACE1),
-        status_opt.unwrap_or(Some(EntityStatus::Allowed)),
+    SessionKeys::remove_keys(
+        origin.unwrap_or_else(|| Origin::signed(ACCOUNT1))
     )
 }
 
-pub(crate) fn _delete_default_entity_status() -> DispatchResult {
-    _delete_entity_status(None, None, None)
-}
+pub(crate) fn _default_proxy() -> DispatchResult { _proxy(None, None)}
 
-pub(crate) fn _delete_entity_status(
+pub(crate) fn _proxy(
     origin: Option<Origin>,
-    entity: Option<EntityId<AccountId>>,
-    scope: Option<SpaceId>,
+    call: Option<Call>,
 ) -> DispatchResult {
-    Moderation::delete_entity_status(
-        origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-        entity.unwrap_or(EntityId::Post(POST1)),
-        scope.unwrap_or(SPACE1),
+    SessionKeys::proxy(
+        origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
+        Box::new(call.unwrap_or(create_space_proxy_call())),
     )
 }
-
-pub(crate) fn _update_default_moderation_settings() -> DispatchResult {
-    _update_moderation_settings(None, None, None)
-}
-
-pub(crate) fn _update_moderation_settings(
-    origin: Option<Origin>,
-    space_id: Option<SpaceId>,
-    settings_update: Option<SpaceModerationSettingsUpdate>,
-) -> DispatchResult {
-    Moderation::update_moderation_settings(
-        origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-        space_id.unwrap_or(SPACE1),
-        settings_update.unwrap_or_else(|| default_moderation_settings_update()),
-    )
-}
-
-

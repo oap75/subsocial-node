@@ -22,7 +22,10 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'sp-std/std',
+    'transaction-payment/std',
     'pallet-utils/std',
+    'pallet-spaces/std',
+    'pallet-space-follows/std',
     'pallet-permissions/std',
 ]
 
@@ -61,12 +64,66 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc4'
 version = '2.0.0-rc4'
 
+[dependencies.transaction-payment]
+default-features = false
+package = 'pallet-transaction-payment'
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc4'
+version = '2.0.0-rc4'
+
 [dependencies.pallet-utils]
 default-features = false
 path = '../utils'
+version = '0.4.0'
+
+[dependencies.pallet-spaces]
+default-features = false
+path = '../spaces'
+version = '0.4.0'
+
+[dependencies.pallet-space-follows]
+default-features = false
+path = '../space-follows'
 version = '0.4.0'
 
 [dependencies.pallet-permissions]
 default-features = false
 path = '../permissions'
 version = '0.4.0'
+
+[dev-dependencies.sp-core]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc4'
+version = '2.0.0-rc4'
+
+[dev-dependencies.sp-io]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc4'
+version = '2.0.0-rc4'
+
+[dev-dependencies.pallet-timestamp]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc4'
+version = '2.0.0-rc4'
+
+[dev-dependencies.pallet-roles]
+default-features = false
+path = "../roles"
+
+[dev-dependencies.df-traits]
+default-features = false
+path = '../traits'
+version = '0.4.0'
+
+[dev-dependencies.pallet-balances]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc4'
+version = '2.0.0-rc4'
+
+[dev-dependencies.pallet-profiles]
+default-features = false
+path = "../profiles"

@@ -372,6 +372,7 @@ impl pallet_posts::Trait for Runtime {
 	type MaxCommentDepth = MaxCommentDepth;
 	type PostScores = Scores;
 	type AfterPostUpdated = PostHistory;
+	type IsPostBlocked = Moderation;
 }
 
 parameter_types! {}
@@ -413,8 +414,8 @@ impl pallet_roles::Trait for Runtime {
 	type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
 	type Spaces = Spaces;
 	type SpaceFollows = SpaceFollows;
-	type IsAccountBlocked = ()/*Moderation*/;
-	type IsContentBlocked = ()/*Moderation*/;
+	type IsAccountBlocked = Moderation;
+	type IsContentBlocked = Moderation;
 }
 
 parameter_types! {
@@ -447,6 +448,32 @@ impl pallet_scores::Trait for Runtime {
 	type DownvoteCommentActionWeight = DownvoteCommentActionWeight;
 }
 
+parameter_types! {
+	/// Minimum space owners allowed.
+	pub const MinSpaceOwners: u16 = 1;
+
+	/// Maximum space owners allowed.
+	pub const MaxSpaceOwners: u16 = 10;
+
+	/// Maximum length of change notes.
+	pub const MaxChangeNotesLength: u16 = 128;
+
+	/// Expiration time for change proposal.
+	pub const BlocksToLive: BlockNumber = 5 * DAYS;
+
+	/// Period in blocks for which change proposal can remain in a pending state until deleted.
+	pub const DeleteExpiredChangesPeriod: BlockNumber = 1 * HOURS;
+}
+
+impl pallet_space_multi_ownership::Trait for Runtime {
+	type Event = Event;
+	type MinSpaceOwners = MinSpaceOwners;
+	type MaxSpaceOwners = MaxSpaceOwners;
+	type MaxChangeNotesLength = MaxChangeNotesLength;
+	type BlocksToLive = BlocksToLive;
+	type DeleteExpiredChangesPeriod = DeleteExpiredChangesPeriod;
+}
+
 parameter_types! {}
 
 impl pallet_space_follows::Trait for Runtime {
@@ -462,7 +489,7 @@ impl pallet_space_ownership::Trait for Runtime {
 }
 
 parameter_types! {
-	pub SpaceCreationFee: Balance = 50 * CENTS;
+	pub const SpaceCreationFee: Balance = 50 * CENTS;
 }
 
 impl pallet_spaces::Trait for Runtime {
@@ -471,9 +498,10 @@ impl pallet_spaces::Trait for Runtime {
 	type SpaceFollows = SpaceFollows;
 	type BeforeSpaceCreated = SpaceFollows;
 	type AfterSpaceUpdated = SpaceHistory;
-	type IsAccountBlocked = ()/*Moderation*/;
-	type IsContentBlocked = ()/*Moderation*/;
+	type IsAccountBlocked = Moderation;
+	type IsContentBlocked = Moderation;
 	type SpaceCreationFee = SpaceCreationFee;
+	type IsSpaceOwner = SpaceMultiOwnership;
 }
 
 parameter_types! {}
@@ -483,18 +511,19 @@ impl pallet_space_history::Trait for Runtime {}
 pub struct BaseFilter;
 impl Filter<Call> for BaseFilter {
 	fn filter(c: &Call) -> bool {
-		let is_set_balance = matches!(c, Call::Balances(balances::Call::set_balance(..)));
-		let is_force_transfer = matches!(c, Call::Balances(balances::Call::force_transfer(..)));
+		// let is_set_balance = matches!(c, Call::Balances(balances::Call::set_balance(..)));
+		// let is_force_transfer = matches!(c, Call::Balances(balances::Call::force_transfer(..)));
 		match *c {
-			Call::Balances(..) => is_set_balance || is_force_transfer,
+			// Call::Balances(..) => is_set_balance || is_force_transfer,
 			_ => true,
 		}
 	}
 }
 
-/*
+
 parameter_types! {
 	pub const MaxSessionKeysPerAccount: u16 = 10;
+	pub const BaseSessionKeyBond: Balance = 1 * DOLLARS;
 }
 
 pub struct SessionKeysProxyFilter;
@@ -516,11 +545,13 @@ impl session_keys::Trait for Runtime {
 	type Call = Call;
 	type MaxSessionKeysPerAccount = MaxSessionKeysPerAccount;
 	type BaseFilter = SessionKeysProxyFilter;
+	type BaseSessionKeyBond = BaseSessionKeyBond;
 }
 
-impl pallet_donations::Trait for Runtime {
+/*impl pallet_donations::Trait for Runtime {
 	type Event = Event;
-}
+}*/
+
 
 parameter_types! {
 	pub const DefaultAutoblockThreshold: u16 = 20;
@@ -531,6 +562,7 @@ impl pallet_moderation::Trait for Runtime {
 	type DefaultAutoblockThreshold = DefaultAutoblockThreshold;
 }
 
+/*
 parameter_types! {
 	pub const DailyPeriodInBlocks: BlockNumber = DAYS;
 	pub const WeeklyPeriodInBlocks: BlockNumber = DAYS * 7;
@@ -587,14 +619,15 @@ construct_runtime!(
 		SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
 		SpaceHistory: pallet_space_history::{Module, Storage},
 		SpaceOwnership: pallet_space_ownership::{Module, Call, Storage, Event<T>},
+		SpaceMultiOwnership: pallet_space_multi_ownership::{Module, Call, Storage, Event<T>},
 		Spaces: pallet_spaces::{Module, Call, Storage, Event<T>, Config<T>},
 		Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
 
 		// New experimental pallets. Not recommended to use in production yet.
 
 		// Faucet: pallet_faucet::{Module, Call, Storage, Event<T>},
-		// SessionKeys: session_keys::{Module, Call, Storage, Event<T>},
-		// Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
+		SessionKeys: session_keys::{Module, Call, Storage, Event<T>},
+		Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
 		// Donations: pallet_donations::{Module, Call, Storage, Event<T>},
 		// Subscriptions: pallet_subscriptions::{Module, Call, Storage, Event<T>},
 	}

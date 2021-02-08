@@ -125,6 +125,8 @@ decl_error! {
         AccountIsBlocked,
         /// Content is blocked in a given space.
         ContentIsBlocked,
+        /// Post is blocked in a given space.
+        PostIsBlocked,
         /// IPFS CID is invalid.
         InvalidIpfsCid,
         /// `Raw` content type is not yet supported.

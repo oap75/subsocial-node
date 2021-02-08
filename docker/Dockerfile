@@ -3,15 +3,19 @@ LABEL maintainer "dappforce@pm.me"
 
 WORKDIR /subsocial
 
-COPY . /subsocial
-
 RUN apt-get update && \
 	apt-get upgrade -y && \
 	apt-get install -y cmake pkg-config libssl-dev git clang
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-        export PATH=$PATH:$HOME/.cargo/bin && \
-        scripts/init.sh && \
-        cargo build --release
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+COPY . /subsocial
+
+RUN rustup toolchain add nightly-2020-07-02
+RUN scripts/init.sh
+
+RUN cargo +nightly-2020-07-02 build --release
 
 FROM phusion/baseimage:0.11
 LABEL maintainer "dappforce@pm.me"

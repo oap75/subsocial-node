@@ -54,3 +54,9 @@ pub trait PermissionChecker {
     )
   }
 }
+
+pub trait SpaceOwnershipCheck {
+  type AccountId;
+
+  fn is_space_owner(account: Self::AccountId, space_id: SpaceId) -> bool;
+}

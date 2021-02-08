@@ -4,14 +4,14 @@ use codec::{Decode, Encode};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure,
     dispatch::{DispatchError, DispatchResult},
-    traits::{Get, Currency, ExistenceRequirement},
+    traits::{Get, Currency},
 };
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use frame_system::{self as system, ensure_signed};
 
 use df_traits::{
-    SpaceForRoles, SpaceForRolesProvider, PermissionChecker, SpaceFollowsProvider,
+    SpaceForRoles, SpaceForRolesProvider, PermissionChecker, SpaceFollowsProvider, SpaceOwnershipCheck,
     moderation::{IsAccountBlocked, IsContentBlocked},
 };
 use pallet_permissions::{SpacePermission, SpacePermissions, SpacePermissionsContext};
@@ -74,6 +74,8 @@ pub trait Trait: system::Trait
     type IsContentBlocked: IsContentBlocked;
 
     type SpaceCreationFee: Get<BalanceOf<Self>>;
+
+    type IsSpaceOwner: SpaceOwnershipCheck<AccountId=Self::AccountId>;
 }
 
 decl_error! {
@@ -175,12 +177,12 @@ decl_module! {
         )?;
       }
 
-      <T as pallet_utils::Trait>::Currency::transfer(
-        &owner,
-        &Utils::<T>::treasury_account(),
-        T::SpaceCreationFee::get(),
-        ExistenceRequirement::KeepAlive
-      )?;
+      // <T as pallet_utils::Trait>::Currency::transfer(
+      //   &owner,
+      //   &Utils::<T>::treasury_account(),
+      //   T::SpaceCreationFee::get(),
+      //   ExistenceRequirement::KeepAlive
+      // )?;
 
       let space_id = Self::next_space_id();
       let new_space = &mut Space::new(space_id, parent_id_opt, owner.clone(), content, handle_opt);
@@ -346,7 +348,7 @@ impl<T: Trait> Space<T> {
     }
 
     pub fn is_owner(&self, account: &T::AccountId) -> bool {
-        self.owner == *account
+        self.owner == *account || T::IsSpaceOwner::is_space_owner(account.clone(), self.id)
     }
 
     pub fn is_follower(&self, account: &T::AccountId) -> bool {

@@ -1,17 +1,24 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get};
-use pallet_utils::{SpaceId, WhoAndWhen};
-use sp_runtime::{RuntimeDebug, traits::Zero};
-use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::prelude::*;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_runtime::{RuntimeDebug, traits::Zero};
+
+use frame_support::{
+  decl_error, decl_event, decl_module, decl_storage, ensure,
+  traits::Get
+};
 use frame_system::{self as system, ensure_signed};
+
+use df_traits::SpaceOwnershipCheck;
+use pallet_spaces::{Module as SpacesModule, Error as SpacesError};
+use pallet_utils::{SpaceId, WhoAndWhen};
 
 pub mod functions;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct SpaceOwners<T: Trait> {
@@ -40,6 +47,8 @@ type ChangeId = u64;
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait
   + pallet_timestamp::Trait
+  + pallet_spaces::Trait
+  + pallet_utils::Trait
 {
   /// The overarching event type.
   type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -73,8 +82,11 @@ decl_error! {
     NotEnoughOwners,
     /// There can not be more owners than allowed
     TooManyOwners,
-    /// Account is not a space owner
-    NotASpaceOwner,
+
+    /// The initial owner of the space must be included in space owners list
+    InitialOwnerMustBeIncluded,
+    /// The initial owner of the space cannot be removed
+    InitialOwnerCannotBeRemoved,
 
     /// The threshold can not be less than 1
     ZeroThershold,
@@ -112,15 +124,25 @@ decl_error! {
 
 // This pallet's storage items.
 decl_storage! {
-  trait Store for Module<T: Trait> as SpaceOwnersModule {
-    SpaceOwnersBySpaceById get(space_owners_by_space_id): map SpaceId => Option<SpaceOwners<T>>;
-    SpaceIdsOwnedByAccountId get(space_ids_owned_by_account_id): map T::AccountId => BTreeSet<SpaceId> = BTreeSet::new();
+  trait Store for Module<T: Trait> as SpaceMultiOwnershipModule {
+    SpaceOwnersBySpaceById get(fn space_owners_by_space_id):
+      map hasher(twox_64_concat) SpaceId => Option<SpaceOwners<T>>;
 
-    NextChangeId get(next_change_id): ChangeId = 1;
-    ChangeById get(change_by_id): map ChangeId => Option<Change<T>>;
-    PendingChangeIdBySpaceId get(pending_change_id_by_space_id): map SpaceId => Option<ChangeId>;
-    PendingChangeIds get(pending_change_ids): BTreeSet<ChangeId> = BTreeSet::new();
-    ExecutedChangeIdsBySpaceId get(executed_change_ids_by_space_id): map SpaceId => Vec<ChangeId>;
+    SpaceIdsOwnedByAccountId get(fn space_ids_owned_by_account_id):
+      map hasher(twox_64_concat) T::AccountId => BTreeSet<SpaceId> = BTreeSet::new();
+
+    NextChangeId get(fn next_change_id): ChangeId = 1;
+
+    ChangeById get(fn change_by_id):
+      map hasher(twox_64_concat) ChangeId => Option<Change<T>>;
+
+    PendingChangeIdBySpaceId get(fn pending_change_id_by_space_id):
+      map hasher(twox_64_concat) SpaceId => Option<ChangeId>;
+
+    PendingChangeIds get(fn pending_change_ids): BTreeSet<ChangeId> = BTreeSet::new();
+
+    ExecutedChangeIdsBySpaceId get(fn executed_change_ids_by_space_id):
+      map hasher(twox_64_concat) SpaceId => Vec<ChangeId>;
   }
 }
 
@@ -149,6 +171,7 @@ decl_module! {
       Self::delete_expired_changes(n);
     }
 
+    #[weight = T::DbWeight::get().reads_writes(3, 2) + 10_000]
     pub fn create_space_owners(
       origin,
       space_id: SpaceId,
@@ -157,7 +180,11 @@ decl_module! {
     ) {
       let who = ensure_signed(origin)?;
 
+      let space = SpacesModule::<T>::require_space(space_id)?;
+      ensure!(space.is_owner(&who), SpacesError::<T>::NotASpaceOwner);
+
       ensure!(Self::space_owners_by_space_id(space_id).is_none(), Error::<T>::SpaceOwnersAlreadyExist);
+      ensure!(owners.iter().any(|owner| owner == &who), Error::<T>::InitialOwnerMustBeIncluded);
 
       let mut owners_map: BTreeMap<T::AccountId, bool> = BTreeMap::new();
       let mut unique_owners: Vec<T::AccountId> = Vec::new();
@@ -193,6 +220,7 @@ decl_module! {
       Self::deposit_event(RawEvent::SpaceOwnersCreated(who, space_id));
     }
 
+    #[weight = T::DbWeight::get().reads_writes(6, 4) + 10_000]
     pub fn propose_change(
       origin,
       space_id: SpaceId,
@@ -211,11 +239,13 @@ decl_module! {
       ensure!(has_updates, Error::<T>::NoUpdatesProposed);
       ensure!(notes.len() <= T::MaxChangeNotesLength::get() as usize, Error::<T>::ChangeNotesOversize);
 
+      let space = SpacesModule::<T>::require_space(space_id)?;
+      ensure!(space.is_owner(&who), SpacesError::<T>::NotASpaceOwner);
+
+      ensure!(!remove_owners.iter().any(|owner| owner == &who), Error::<T>::InitialOwnerCannotBeRemoved);
+
       let space_owners = Self::space_owners_by_space_id(space_id).ok_or(Error::<T>::SpaceOwnersNotFound)?;
       ensure!(Self::pending_change_id_by_space_id(space_id).is_none(), Error::<T>::PendingChangeAlreadyExists);
-
-      let is_space_owner = space_owners.owners.iter().any(|owner| *owner == who.clone());
-      ensure!(is_space_owner, Error::<T>::NotASpaceOwner);
 
       let mut fields_updated : u16 = 0;
 
@@ -259,6 +289,7 @@ decl_module! {
       }
     }
 
+    #[weight = T::DbWeight::get().reads_writes(4, 1) + 10_000]
     pub fn confirm_change(
       origin,
       space_id: SpaceId,
@@ -266,10 +297,10 @@ decl_module! {
     ) {
       let who = ensure_signed(origin)?;
 
-      let space_owners = Self::space_owners_by_space_id(space_id).ok_or(Error::<T>::SpaceOwnersNotFound)?;
+      let space = SpacesModule::<T>::require_space(space_id)?;
+      ensure!(space.is_owner(&who), SpacesError::<T>::NotASpaceOwner);
 
-      let is_space_owner = space_owners.owners.iter().any(|owner| *owner == who.clone());
-      ensure!(is_space_owner, Error::<T>::NotASpaceOwner);
+      let space_owners = Self::space_owners_by_space_id(space_id).ok_or(Error::<T>::SpaceOwnersNotFound)?;
 
       let mut change = Self::change_by_id(change_id).ok_or(Error::<T>::ChangeNotFound)?;
 
@@ -290,6 +321,7 @@ decl_module! {
       Self::deposit_event(RawEvent::ChangeConfirmed(who, space_id, change_id));
     }
 
+    #[weight = T::DbWeight::get().reads_writes(4, 3) + 10_000]
     pub fn cancel_change(
       origin,
       space_id: SpaceId,
@@ -297,10 +329,8 @@ decl_module! {
     ) {
       let who = ensure_signed(origin)?;
 
-      let space_owners = Self::space_owners_by_space_id(space_id).ok_or(Error::<T>::SpaceOwnersNotFound)?;
-
-      let is_space_owner = space_owners.owners.iter().any(|owner| *owner == who.clone());
-      ensure!(is_space_owner, Error::<T>::NotASpaceOwner);
+      let space = SpacesModule::<T>::require_space(space_id)?;
+      ensure!(space.is_owner(&who), SpacesError::<T>::NotASpaceOwner);
 
       let pending_change_id = Self::pending_change_id_by_space_id(space_id).ok_or(Error::<T>::PendingChangeDoesNotExist)?;
       ensure!(pending_change_id == change_id, Error::<T>::ChangeNotRelatedToSpace);
@@ -328,3 +358,15 @@ decl_event!(
     SpaceOwnersUpdated(AccountId, SpaceId, ChangeId),
   }
 );
+
+impl<T: Trait> SpaceOwnershipCheck for Module<T> {
+  type AccountId = T::AccountId;
+
+  fn is_space_owner(account: Self::AccountId, space_id: SpaceId) -> bool {
+    return if let Some(space_owners) = Self::space_owners_by_space_id(space_id) {
+      space_owners.owners.iter().any(|owner| *owner == account.clone())
+    } else {
+      false
+    }
+  }
+}

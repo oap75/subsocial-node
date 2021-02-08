@@ -874,6 +874,7 @@ dependencies = [
 name = "df-integration-tests"
 version = "0.4.0"
 dependencies = [
+ "df-traits",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -3182,6 +3183,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-moderation"
+version = "0.4.0"
+dependencies = [
+ "df-traits",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-permissions",
+ "pallet-posts",
+ "pallet-profiles",
+ "pallet-roles",
+ "pallet-space-follows",
+ "pallet-spaces",
+ "pallet-timestamp",
+ "pallet-utils",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-permissions"
 version = "0.4.0"
 dependencies = [
@@ -3364,6 +3388,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-session-keys"
+version = "0.4.0"
+dependencies = [
+ "df-traits",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-permissions",
+ "pallet-profiles",
+ "pallet-roles",
+ "pallet-space-follows",
+ "pallet-spaces",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-utils",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-space-follows"
 version = "0.4.0"
 dependencies = [
@@ -3386,6 +3434,29 @@ dependencies = [
  "pallet-spaces",
  "pallet-utils",
  "parity-scale-codec",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-space-multi-ownership"
+version = "0.4.0"
+dependencies = [
+ "df-traits",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-moderation",
+ "pallet-permissions",
+ "pallet-profiles",
+ "pallet-roles",
+ "pallet-space-follows",
+ "pallet-spaces",
+ "pallet-timestamp",
+ "pallet-utils",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
@@ -6261,6 +6332,7 @@ dependencies = [
  "pallet-aura",
  "pallet-balances",
  "pallet-grandpa",
+ "pallet-moderation",
  "pallet-permissions",
  "pallet-post-history",
  "pallet-posts",
@@ -6272,8 +6344,10 @@ dependencies = [
  "pallet-roles",
  "pallet-scheduler",
  "pallet-scores",
+ "pallet-session-keys",
  "pallet-space-follows",
  "pallet-space-history",
+ "pallet-space-multi-ownership",
  "pallet-space-ownership",
  "pallet-spaces",
  "pallet-sudo",
