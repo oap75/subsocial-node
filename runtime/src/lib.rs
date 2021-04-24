@@ -42,7 +42,7 @@ pub use frame_support::{
 use frame_system::EnsureRoot;
 
 pub mod constants;
-use constants::{currency::*, time::*};
+use constants::{currency::*, time::*, rate_limiter::*};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -296,6 +296,15 @@ impl pallet_utility::Trait for Runtime {
 // ------------------------------------------------------------------------------------------------
 
 parameter_types! {
+  pub const RateConfigs: Vec<RateConfig<BlockNumber>> = RATE_CONFIGS;
+}
+
+impl pallet_rate_limiter::Trait for Runtime {
+	type Event = Event;
+	type RateConfigs = RateConfigs;
+}
+
+parameter_types! {
   pub const MinHandleLen: u32 = 5;
   pub const MaxHandleLen: u32 = 50;
 }
@@ -547,6 +556,7 @@ construct_runtime!(
 		// New experimental pallets. Not recommended to use in production yet.
 
 		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
+		RateLimiter: pallet_rate_limiter::{Module, Call, Storage, Event<T>},
 		// SessionKeys: pallet_session_keys::{Module, Call, Storage, Event<T>},
 		// Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
 		// Donations: pallet_donations::{Module, Call, Storage, Event<T>},

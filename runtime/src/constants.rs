@@ -22,3 +22,27 @@ pub mod time {
 	pub const HOURS: BlockNumber = MINUTES * 60;
 	pub const DAYS: BlockNumber = HOURS * 24;
 }
+
+pub mod rate_limiter {
+	use crate::BlockNumber;
+	use pallet_rate_limiter::RateConfig;
+	use time::*;
+	
+	pub const RATE_CONFIGS: Vec<RateConfig<BlockNumber>> = vec![
+		RateConfig {
+			enabled: true,
+			period: 5 * MINUTES,
+			max_permits: 10
+		},
+		RateConfig {
+			enabled: true,
+			period: 1 * HOURS,
+			max_permits: 20
+		},
+		RateConfig {
+			enabled: true,
+			period: 1 * DAYS,
+			max_permits: 40
+		}
+	];
+}

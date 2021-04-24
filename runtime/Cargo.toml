@@ -39,6 +39,7 @@ pallet-profile-follows = { default-features = false, path = '../pallets/profile-
 pallet-profile-history = { default-features = false, path = '../pallets/profile-history' }
 pallet-profiles = { default-features = false, path = '../pallets/profiles' }
 
+pallet-rate-limiter = { default-features = false, path = '../pallets/rate-limiter' }
 pallet-reactions = { default-features = false, path = '../pallets/reactions' }
 pallet-roles = { default-features = false, path = '../pallets/roles' }
 pallet-scores = { default-features = false, path = '../pallets/scores' }
@@ -134,6 +135,7 @@ std = [
     'pallet-profile-follows/std',
     'pallet-profile-history/std',
     'pallet-profiles/std',
+    'pallet-rate-limiter/std',
     'pallet-reactions/std',
     'pallet-roles/std',
     'pallet-scores/std',
