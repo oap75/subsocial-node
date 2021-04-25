@@ -30,17 +30,14 @@ pub mod rate_limiter {
 	
 	pub const RATE_CONFIGS: Vec<RateConfig<BlockNumber>> = vec![
 		RateConfig {
-			enabled: true,
 			period: 5 * MINUTES,
 			max_permits: 10
 		},
 		RateConfig {
-			enabled: true,
 			period: 1 * HOURS,
 			max_permits: 20
 		},
 		RateConfig {
-			enabled: true,
 			period: 1 * DAYS,
 			max_permits: 40
 		}

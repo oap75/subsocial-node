@@ -33,16 +33,13 @@ use sp_std::{
 /// We assume that the system may not need more than 256 types of sliding windows.
 pub type WindowType = u8;
 
-// Think: Maybe it could be a generic type?
+// TODO Think: Maybe it could be a generic type?
 /// One permit is one transaction.
 pub type PermitUnit = u32;
 
-// TODO maybe rename to WindowConfig SlidingWindow or RateLimiterWindow
+// TODO maybe rename to TimeWindow WindowConfig SlidingWindow or RateLimiterWindow
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct RateConfig<BlockNumber> {
-
-    // TODO do we need this field? If yes, then use it
-    pub enabled: bool,
 
     /// Duration of a period in the number of blocks.
     pub period: BlockNumber,
