@@ -1,10 +1,13 @@
 //! # Rate Limiter Module
 //!
 //! Module for rate limiting of free transactions on Subsocial network.
-//! This rate limiter is based on the "Sliding Window" technique.
+//! We use the technique of multiple fixed windows of different timespan to tracker the usage
+//! of resources (transactions) per each account that asked for free transaction.
 //! 
 //! Resources:
 //! - https://cloud.google.com/architecture/rate-limiting-strategies-techniques
+//! - https://www.figma.com/blog/an-alternative-approach-to-rate-limiting/
+//! - https://www.codementor.io/@arpitbhayani/system-design-sliding-window-based-rate-limiter-157x7sburi
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -30,14 +33,14 @@ use sp_std::{
 
 /// The type of a rate-limiting window.
 /// It should be sufficient to have three types of windows, e.g. 5 minutes, 1 hour and 1 day.
-/// We assume that the system may not need more than 256 types of sliding windows.
+/// We assume that the system may not need more than 256 types of rate limting windows.
 pub type WindowType = u8;
 
 // TODO Think: Maybe it could be a generic type?
 /// One permit is one transaction.
-pub type PermitUnit = u32;
+pub type PermitUnit = u16;
 
-// TODO maybe rename to TimeWindow WindowConfig SlidingWindow or RateLimiterWindow
+// TODO maybe rename to TimeWindow WindowConfig SlidingWindow or RateLimitingWindow
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct RateConfig<BlockNumber> {
 
@@ -107,7 +110,7 @@ decl_storage! {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
-        // Sorted vector of rate-limiting sliding windows.
+        // Sorted vector of rate-limiting rate limiting windows.
         const RateConfigs: Vec<RateConfig<T::BlockNumber>> = {
             let mut v = T::RateConfigs::get();
 
