@@ -109,11 +109,15 @@ pub trait Trait:
 	type YearlyPeriodInBlocks: Get<Self::BlockNumber>;
 }
 
+pub const FIRST_SUBSCRIPTION_PLAN_ID: u64 = 1;
+
 decl_storage! {
 	trait Store for Module<T: Trait> as SubscriptionsModule {
+
 		// Plans:
 
-		pub NextPlanId get(fn next_plan_id): SubscriptionPlanId = 1;
+		/// The next subscription plan id.
+		pub NextPlanId get(fn next_plan_id): SubscriptionPlanId = FIRST_SUBSCRIPTION_PLAN_ID;
 
 		pub PlanById get(fn plan_by_id):
 			map hasher(twox_64_concat) SubscriptionPlanId => Option<SubscriptionPlan<T>>;

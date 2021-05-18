@@ -105,12 +105,14 @@ decl_error! {
     }
 }
 
+pub const FIRST_ROLE_ID: u64 = 1;
+
 // This pallet's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as PermissionsModule {
 
         /// The next role id.
-        pub NextRoleId get(fn next_role_id): RoleId = 1;
+        pub NextRoleId get(fn next_role_id): RoleId = FIRST_ROLE_ID;
 
         /// Get role details by its id.
         pub RoleById get(fn role_by_id):

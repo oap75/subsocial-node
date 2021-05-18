@@ -152,10 +152,14 @@ pub trait AfterPostUpdated<T: Trait> {
     fn after_post_updated(account: T::AccountId, post: &Post<T>, old_data: PostUpdate);
 }
 
+pub const FIRST_POST_ID: u64 = 1;
+
 // This pallet's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as PostsModule {
-        pub NextPostId get(fn next_post_id): PostId = 1;
+
+        /// The next post id.
+        pub NextPostId get(fn next_post_id): PostId = FIRST_POST_ID;
 
         pub PostById get(fn post_by_id): map hasher(twox_64_concat) PostId => Option<Post<T>>;
 

@@ -61,10 +61,14 @@ pub trait Trait: system::Trait
     type PostReactionScores: PostReactionScores<Self>;
 }
 
+pub const FIRST_REACTION_ID: u64 = 1;
+
 // This pallet's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as ReactionsModule {
-        pub NextReactionId get(fn next_reaction_id): ReactionId = 1;
+
+        /// The next reaction id.
+        pub NextReactionId get(fn next_reaction_id): ReactionId = FIRST_REACTION_ID;
 
         pub ReactionById get(fn reaction_by_id):
             map hasher(twox_64_concat) ReactionId => Option<Reaction<T>>;
