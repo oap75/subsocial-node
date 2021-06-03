@@ -83,7 +83,7 @@ pub struct Space<T: Trait> {
     pub permissions: Option<SpacePermissions>,
 }
 
-#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+#[derive(Encode, Decode, Clone, Eq, PartialEq, Default, RuntimeDebug)]
 #[allow(clippy::option_option)]
 pub struct SpaceUpdate {
     pub parent_id: Option<Option<SpaceId>>,
@@ -459,18 +459,6 @@ impl<T: Trait> Space<T> {
 
     pub fn is_unlisted(&self) -> bool {
         !self.is_public()
-    }
-}
-
-impl Default for SpaceUpdate {
-    fn default() -> Self {
-        SpaceUpdate {
-            parent_id: None,
-            handle: None,
-            content: None,
-            hidden: None,
-            permissions: None,
-        }
     }
 }
 
