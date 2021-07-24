@@ -11,6 +11,8 @@ use frame_system::{self as system, ensure_signed};
 use pallet_profiles::{Module as Profiles, SocialAccountById};
 use pallet_utils::remove_from_vec;
 
+pub mod rpc;
+
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait
     + pallet_utils::Trait

@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-moderation'
-version = '0.6.0'
+version = '0.6.1'
 authors = ['DappForce <dappforce@pm.me>']
 edition = '2018'
 license = 'GPL-3.0-only'
@@ -29,13 +29,9 @@ std = [
     'pallet-utils/std',
 ]
 
-[dependencies.codec]
-default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '1.3.4'
-
 [dependencies]
+codec = { package = "parity-scale-codec", version = "1.3.4", default-features = false, features = ["derive"] }
+
 # Local dependencies
 df-traits = { default-features = false, path = '../traits' }
 pallet-permissions = { default-features = false, path = '../permissions' }

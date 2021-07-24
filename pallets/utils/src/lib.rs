@@ -9,12 +9,15 @@ use frame_support::{
         Imbalance, OnUnbalanced,
     },
 };
+use frame_system as system;
+
+#[cfg(feature = "std")]
+use serde::Deserialize;
 use sp_runtime::RuntimeDebug;
 use sp_std::{
     collections::btree_set::BTreeSet,
     prelude::*,
 };
-use frame_system::{self as system};
 
 #[cfg(test)]
 mod mock;
@@ -23,7 +26,10 @@ pub mod mock_functions;
 #[cfg(test)]
 mod tests;
 
+pub mod rpc;
+
 pub type SpaceId = u64;
+pub type PostId = u64;
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct WhoAndWhen<T: Trait> {
@@ -48,16 +54,54 @@ pub enum User<AccountId> {
     Space(SpaceId),
 }
 
+impl<AccountId> User<AccountId> {
+    pub fn maybe_account(self) -> Option<AccountId> {
+        if let User::Account(account_id) = self {
+            Some(account_id)
+        } else {
+            None
+        }
+    }
+
+    pub fn maybe_space(self) -> Option<SpaceId> {
+        if let User::Space(space_id) = self {
+            Some(space_id)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(Deserialize))]
+#[cfg_attr(feature = "std", serde(tag = "contentType", content = "contentId"))]
 pub enum Content {
     /// No content.
     None,
     /// A raw vector of bytes.
     Raw(Vec<u8>),
     /// IPFS CID v0 of content.
+    #[allow(clippy::upper_case_acronyms)]
     IPFS(Vec<u8>),
     /// Hypercore protocol (former DAT) id of content.
     Hyper(Vec<u8>),
+}
+
+impl From<Content> for Vec<u8> {
+    fn from(content: Content) -> Vec<u8> {
+        match content {
+            Content::None => vec![],
+            Content::Raw(vec_u8) => vec_u8,
+            Content::IPFS(vec_u8) => vec_u8,
+            Content::Hyper(vec_u8) => vec_u8,
+        }
+    }
+}
+
+impl Default for Content {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 impl Content {
@@ -67,6 +111,10 @@ impl Content {
 
     pub fn is_some(&self) -> bool {
         !self.is_none()
+    }
+
+    pub fn is_ipfs(&self) -> bool {
+        matches!(self, Self::IPFS(_))
     }
 }
 
@@ -161,8 +209,8 @@ pub fn log_2(x: u32) -> Option<u32> {
     if x > 0 {
         Some(
             num_bits::<u32>() as u32
-            - x.leading_zeros()
-            - 1
+                - x.leading_zeros()
+                - 1
         )
     } else { None }
 }
@@ -173,8 +221,11 @@ pub fn remove_from_vec<F: PartialEq>(vector: &mut Vec<F>, element: F) {
     }
 }
 
-impl<T: Trait> Module<T> {
+pub fn bool_to_option(value: bool) -> Option<bool> {
+    if value { Some(value) } else { None }
+}
 
+impl<T: Trait> Module<T> {
     pub fn is_valid_content(content: Content) -> DispatchResult {
         match content {
             Content::None => Ok(()),
@@ -218,7 +269,7 @@ impl<T: Trait> Module<T> {
     /// - Lowercase a handle.
     /// - Check if a handle contains only valid chars: 0-9, a-z, _.
     pub fn lowercase_and_validate_a_handle(handle: Vec<u8>) -> Result<Vec<u8>, DispatchError> {
-        
+
         // Check if a handle length fits into min/max length constraints:
         ensure!(handle.len() >= T::MinHandleLen::get() as usize, Error::<T>::HandleIsTooShort);
         ensure!(handle.len() <= T::MaxHandleLen::get() as usize, Error::<T>::HandleIsTooLong);

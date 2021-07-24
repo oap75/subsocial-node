@@ -8,6 +8,8 @@ To learn more about Subsocial, please visit [Subsocial Network](http://subsocial
 
 ## Build
 
+### Build from scratch
+
 Install Rust:
 
 ```bash
@@ -24,6 +26,22 @@ Build Wasm and native code:
 
 ```bash
 cargo build --release
+```
+
+### Build runtime WASM with SRTool
+
+You need to have docker installed for this type of build.
+
+Add SRTool alias:
+
+```sh
+export RUSTC_VERSION=nightly-2021-03-15; export PACKAGE=subsocial-runtime; alias srtool='docker run --rm -it -e RUNTIME_DIR=runtime -e PACKAGE=$PACKAGE -v $PWD:/build -v "$TMPDIR"/cargo:/cargo-home chevdor/srtool:$RUSTC_VERSION'
+```
+
+Run build:
+
+```sh
+srtool build
 ```
 
 ## Run
@@ -78,3 +96,7 @@ cargo run -- \
 ```
 
 Additional CLI usage options are available and may be shown by running `cargo run -- --help`.
+
+## License
+
+Subsocial is [GPL 3.0](./LICENSE) licensed.

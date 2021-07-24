@@ -6,19 +6,26 @@ use frame_support::{
     dispatch::DispatchResult,
     traits::Get
 };
-use sp_runtime::RuntimeDebug;
-use sp_std::prelude::*;
 use frame_system::{self as system, ensure_signed};
+
+#[cfg(feature = "std")]
+use serde::Deserialize;
+use sp_runtime::{RuntimeDebug, DispatchError};
+use sp_std::prelude::*;
 
 use df_traits::moderation::IsAccountBlocked;
 use pallet_permissions::SpacePermission;
-use pallet_posts::{Module as Posts, Post, PostById, PostId};
+use pallet_posts::{Module as Posts, Post, PostById};
 use pallet_spaces::Module as Spaces;
-use pallet_utils::{Error as UtilsError, remove_from_vec, WhoAndWhen};
+use pallet_utils::{Error as UtilsError, remove_from_vec, WhoAndWhen, PostId};
+
+pub mod rpc;
 
 pub type ReactionId = u64;
 
 #[derive(Encode, Decode, Clone, Copy, Eq, PartialEq, RuntimeDebug)]
+#[cfg_attr(feature = "std", derive(Deserialize))]
+#[cfg_attr(feature = "std", serde(untagged))]
 pub enum ReactionKind {
     Upvote,
     Downvote,
@@ -32,7 +39,11 @@ impl Default for ReactionKind {
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct Reaction<T: Trait> {
+
+    /// Unique sequential identifier of a reaction. Examples of reaction ids: `1`, `2`, `3`,
+    /// and so on.
     pub id: ReactionId,
+
     pub created: WhoAndWhen<T>,
     pub updated: Option<WhoAndWhen<T>>,
     pub kind: ReactionKind,
@@ -50,10 +61,14 @@ pub trait Trait: system::Trait
     type PostReactionScores: PostReactionScores<Self>;
 }
 
+pub const FIRST_REACTION_ID: u64 = 1;
+
 // This pallet's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as ReactionsModule {
-        pub NextReactionId get(fn next_reaction_id): ReactionId = 1;
+
+        /// The next reaction id.
+        pub NextReactionId get(fn next_reaction_id): ReactionId = FIRST_REACTION_ID;
 
         pub ReactionById get(fn reaction_by_id):
             map hasher(twox_64_concat) ReactionId => Option<Reaction<T>>;
@@ -171,7 +186,7 @@ decl_module! {
         Error::<T>::ReactionByAccountNotFound
       );
 
-      let mut reaction = Self::reaction_by_id(reaction_id).ok_or(Error::<T>::ReactionNotFound)?;
+      let mut reaction = Self::require_reaction(reaction_id)?;
       let post = &mut Posts::require_post(post_id)?;
 
       ensure!(owner == reaction.created.account, Error::<T>::NotReactionOwner);
@@ -216,7 +231,7 @@ decl_module! {
       );
 
       // TODO extract Self::require_reaction(reaction_id)?;
-      let reaction = Self::reaction_by_id(reaction_id).ok_or(Error::<T>::ReactionNotFound)?;
+      let reaction = Self::require_reaction(reaction_id)?;
       let post = &mut Posts::require_post(post_id)?;
 
       ensure!(owner == reaction.created.account, Error::<T>::NotReactionOwner);
@@ -243,7 +258,6 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-
     // FIXME: don't add reaction in storage before the checks in 'create_reaction' are done
     pub fn insert_new_reaction(account: T::AccountId, kind: ReactionKind) -> ReactionId {
         let id = Self::next_reaction_id();
@@ -251,13 +265,18 @@ impl<T: Trait> Module<T> {
             id,
             created: WhoAndWhen::<T>::new(account),
             updated: None,
-            kind
+            kind,
         };
 
         <ReactionById<T>>::insert(id, reaction);
         NextReactionId::mutate(|n| { *n += 1; });
 
         id
+    }
+
+    /// Get `Reaction` by id from the storage or return `ReactionNotFound` error.
+    pub fn require_reaction(reaction_id: ReactionId) -> Result<Reaction<T>, DispatchError> {
+        Ok(Self::reaction_by_id(reaction_id).ok_or(Error::<T>::ReactionNotFound)?)
     }
 }
 

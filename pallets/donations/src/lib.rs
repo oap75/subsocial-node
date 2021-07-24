@@ -15,9 +15,9 @@ use frame_support::{
 };
 use frame_system::{self as system, ensure_signed};
 
-use pallet_posts::{Module as Posts, PostId};
+use pallet_posts::Module as Posts;
 use pallet_spaces::{Module as Spaces};
-use pallet_utils::{Content, WhoAndWhen, SpaceId};
+use pallet_utils::{Content, WhoAndWhen, SpaceId, PostId};
 
 type BalanceOf<T> = <<T as pallet_utils::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 

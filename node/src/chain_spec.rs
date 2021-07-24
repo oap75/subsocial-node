@@ -3,7 +3,7 @@ use subsocial_runtime::{
 	AccountId, AuraConfig, BalancesConfig,
 	GenesisConfig, GrandpaConfig, UtilsConfig,
 	SudoConfig, SpacesConfig, SystemConfig,
-	WASM_BINARY, Signature, constants::currency::SMNS,
+	WASM_BINARY, Signature, constants::currency::DOLLARS,
 };
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_finality_grandpa::AuthorityId as GrandpaId;
@@ -65,7 +65,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
                     authority_keys_from_seed("Alice"),
                 ],
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                endowed_accounts.iter().cloned().map(|k| (k, 10_000)).collect(),
+                endowed_accounts.iter().cloned().map(|k| (k, 100_000)).collect(),
                 get_account_id_from_seed::<sr25519::Public>("Ferdie"),
                 true,
             )
@@ -92,13 +92,6 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                 get_account_id_from_seed::<sr25519::Public>("Charlie"),
                 get_account_id_from_seed::<sr25519::Public>("Dave"),
                 get_account_id_from_seed::<sr25519::Public>("Eve"),
-                get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-                get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-                get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-                get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
             ];
 
             testnet_genesis(
@@ -108,8 +101,8 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
                     authority_keys_from_seed("Bob"),
                 ],
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                endowed_accounts.iter().cloned().map(|k| (k, 10_000)).collect(),
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
+                endowed_accounts.iter().cloned().map(|k| (k, 100_000)).collect(),
+                get_account_id_from_seed::<sr25519::Public>("Ferdie"),
                 true,
             )
         },
@@ -210,7 +203,7 @@ fn testnet_genesis(
 			changes_trie_config: Default::default(),
 		}),
         pallet_balances: Some(BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * SMNS)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * DOLLARS)).collect(),
 		}),
 		pallet_aura: Some(AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
@@ -234,7 +227,7 @@ pub fn subsocial_properties() -> Properties {
 	let mut properties = Properties::new();
 
 	properties.insert("ss58Format".into(), 28.into());
-	properties.insert("tokenDecimals".into(), 12.into());
+	properties.insert("tokenDecimals".into(), 11.into());
 	properties.insert("tokenSymbol".into(), "SUB".into());
 
 	properties

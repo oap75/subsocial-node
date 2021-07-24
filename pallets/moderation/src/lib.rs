@@ -28,8 +28,7 @@ use frame_support::{
 };
 use frame_system::{self as system, ensure_signed};
 
-use pallet_utils::{Content, WhoAndWhen, SpaceId, Module as Utils};
-use pallet_posts::PostId;
+use pallet_utils::{Content, WhoAndWhen, SpaceId, Module as Utils, PostId};
 use pallet_spaces::Module as Spaces;
 
 // TODO: move all tests to df-integration-tests
@@ -109,12 +108,14 @@ pub trait Trait: system::Trait
     type DefaultAutoblockThreshold: Get<u16>;
 }
 
+pub const FIRST_REPORT_ID: u64 = 1;
+
 // This pallet's storage items.
 decl_storage! {
     trait Store for Module<T: Trait> as ModerationModule {
 
-        /// An id for the next report.
-        pub NextReportId get(fn next_report_id): ReportId = 1;
+        /// The next moderation report id.
+        pub NextReportId get(fn next_report_id): ReportId = FIRST_REPORT_ID;
 
         /// Report details by its id (key).
         pub ReportById get(fn report_by_id):

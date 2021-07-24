@@ -44,6 +44,10 @@ impl<T: Trait> Post<T> {
         !self.is_comment()
     }
 
+    pub fn is_regular_post(&self) -> bool {
+        matches!(self.extension, PostExtension::RegularPost)
+    }
+
     pub fn is_comment(&self) -> bool {
         matches!(self.extension, PostExtension::Comment(_))
     }
@@ -56,6 +60,13 @@ impl<T: Trait> Post<T> {
         match self.extension {
             PostExtension::Comment(comment_ext) => Ok(comment_ext),
             _ => Err(Error::<T>::NotComment.into())
+        }
+    }
+
+    pub fn get_shared_post_id(&self) -> Result<PostId, DispatchError> {
+        match self.extension {
+            PostExtension::SharedPost(post_id) => Ok(post_id),
+            _ => Err(Error::<T>::NotASharingPost.into())
         }
     }
 
@@ -144,6 +155,14 @@ impl<T: Trait> Post<T> {
             self.score = self.score.saturating_sub(diff.abs() as i32);
         }
     }
+
+    pub fn is_public(&self) -> bool {
+        !self.hidden && self.content.is_some()
+    }
+
+    pub fn is_unlisted(&self) -> bool {
+        !self.is_public()
+    }
 }
 
 impl Default for PostUpdate {
@@ -159,7 +178,7 @@ impl Default for PostUpdate {
 impl<T: Trait> Module<T> {
 
     pub fn ensure_account_can_update_post(
-        editor: &T::AccountId, 
+        editor: &T::AccountId,
         post: &Post<T>,
         space: &Space<T>
     ) -> DispatchResult {
@@ -283,7 +302,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn try_get_post_replies(post_id: PostId) -> Vec<Post<T>> {
+    pub fn try_get_post_replies(post_id: PostId) -> Vec<Post<T>> {
         let mut replies: Vec<Post<T>> = Vec::new();
 
         if let Some(post) = Self::post_by_id(post_id) {
@@ -405,7 +424,7 @@ impl<T: Trait> Module<T> {
             PostExtension::RegularPost | PostExtension::SharedPost(_) => {
 
                 if let Some(old_space_id) = old_space_id_opt {
-                    
+
                     // Decrease the number of posts on the old space
                     Self::mutate_posts_count_on_space(
                         old_space_id,

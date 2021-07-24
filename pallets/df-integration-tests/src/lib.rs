@@ -22,7 +22,7 @@ mod tests {
         SpacePermission as SP,
         SpacePermissions,
     };
-    use pallet_posts::{PostId, Post, PostUpdate, PostExtension, Comment, Error as PostsError};
+    use pallet_posts::{Post, PostUpdate, PostExtension, Comment, Error as PostsError};
     use pallet_profiles::{ProfileUpdate, Error as ProfilesError};
     use pallet_profile_follows::Error as ProfileFollowsError;
     use pallet_reactions::{ReactionId, ReactionKind, PostReactionScores, Error as ReactionsError};
@@ -34,7 +34,7 @@ mod tests {
     use pallet_utils::{
         mock_functions::*,
         Error as UtilsError, Module as Utils,
-        SpaceId, User, Content,
+        SpaceId, PostId, User, Content,
     };
 
     impl_outer_origin! {
@@ -221,10 +221,7 @@ mod tests {
         type Event = ();
     }
 
-    const HANDLE_DEPOSIT: u64 = 5;
-    parameter_types! {
-        pub const HandleDeposit: u64 = HANDLE_DEPOSIT;
-    }
+    const HANDLE_DEPOSIT: u64 = 0;
 
     impl pallet_spaces::Trait for TestRuntime {
         type Event = ();
@@ -235,7 +232,7 @@ mod tests {
         type AfterSpaceUpdated = SpaceHistory;
         type IsAccountBlocked = Moderation;
         type IsContentBlocked = Moderation;
-        type HandleDeposit = HandleDeposit;
+        type HandleDeposit = ();
     }
 
     parameter_types! {}
@@ -322,28 +319,28 @@ mod tests {
         /// Custom ext configuration with SpaceId 1 and BlockNumber 1
         pub fn build_with_space() -> TestExternalities {
             let mut ext = Self::build();
-            ext.execute_with(|| Self::add_default_space());
+            ext.execute_with(Self::add_default_space);
             ext
         }
 
         /// Custom ext configuration with SpaceId 1, PostId 1 and BlockNumber 1
         pub fn build_with_post() -> TestExternalities {
             let mut ext = Self::build();
-            ext.execute_with(|| Self::add_post());
+            ext.execute_with(Self::add_post);
             ext
         }
 
         /// Custom ext configuration with SpaceId 1, PostId 1, PostId 2 (as comment) and BlockNumber 1
         pub fn build_with_comment() -> TestExternalities {
             let mut ext = Self::build();
-            ext.execute_with(|| Self::add_comment());
+            ext.execute_with(Self::add_comment);
             ext
         }
 
         /// Custom ext configuration with SpaceId 1-2, PostId 1 where BlockNumber 1
         pub fn build_with_post_and_two_spaces() -> TestExternalities {
             let mut ext = Self::build_with_post();
-            ext.execute_with(|| Self::add_space_with_no_handle());
+            ext.execute_with(Self::add_space_with_no_handle);
             ext
         }
 
@@ -988,7 +985,7 @@ mod tests {
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
             entity.unwrap_or(EntityId::Post(POST1)),
             scope.unwrap_or(SPACE1),
-            reason.unwrap_or_else(|| valid_content_ipfs()),
+            reason.unwrap_or_else(valid_content_ipfs),
         )
     }
 
@@ -1226,7 +1223,7 @@ mod tests {
 
     /*---------------------------------------------------------------------------------------------------*/
     // Space tests
-    
+
     #[test]
     fn create_space_should_work() {
         ExtBuilder::build().execute_with(|| {
@@ -1453,8 +1450,8 @@ mod tests {
             // Check that the previous space handle has been added to the space history:
             let edit_history = &SpaceHistory::edit_history(space.id)[0];
             assert_eq!(edit_history.old_data.handle, Some(Some(space_handle())));
-            
-            // Check that the previous space handle is not reserved in storage anymore: 
+
+            // Check that the previous space handle is not reserved in storage anymore:
             assert_eq!(find_space_id_by_handle(space_handle()), None);
 
             // Check that the handle deposit has been unreserved:
@@ -1658,6 +1655,162 @@ mod tests {
             ), SpacesError::<TestRuntime>::NoPermissionToUpdateSpace);
         });
     }
+
+    // TODO: refactor or remove. Deprecated tests
+    // Find public space ids tests
+    // --------------------------------------------------------------------------------------------
+    /*#[test]
+    fn find_public_space_ids_should_work() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            assert_ok!(_create_space(None, None, Some(Some(space_handle1())), None, None));
+
+            let space_ids = Spaces::find_public_space_ids(0, 3);
+            assert_eq!(space_ids, vec![SPACE1, SPACE2]);
+        });
+    }
+
+    #[test]
+    fn find_public_space_ids_should_work_with_zero_offset() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            let space_ids = Spaces::find_public_space_ids(0, 1);
+            assert_eq!(space_ids, vec![SPACE1]);
+        });
+    }
+
+    #[test]
+    fn find_public_space_ids_should_work_with_zero_limit() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            let space_ids = Spaces::find_public_space_ids(1, 0);
+            assert_eq!(space_ids, vec![SPACE1]);
+        });
+    }
+
+    #[test]
+    fn find_public_space_ids_should_work_with_zero_offset_and_zero_limit() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            let space_ids = Spaces::find_public_space_ids(0, 0);
+            assert_eq!(space_ids, vec![]);
+        });
+    }
+
+    // Find unlisted space ids tests
+    // --------------------------------------------------------------------------------------------
+
+    #[test]
+    fn find_unlisted_space_ids_should_work() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            assert_ok!(_create_space(None, None, Some(Some(space_handle1())), None, None));
+            assert_ok!(
+                _update_space(
+                    None,
+                    Some(SPACE1),
+                    Some(
+                        space_update(
+                            None,
+                            None,
+                            Some(Content::None),
+                            Some(true),
+                            None
+                        )
+                    )
+                )
+            );
+
+            assert_ok!(
+                _update_space(
+                    None,
+                    Some(SPACE2),
+                    Some(
+                        space_update(
+                            None,
+                            None,
+                            Some(Content::None),
+                            Some(true),
+                            None
+                        )
+                    )
+                )
+            );
+
+
+            let space_ids = Spaces::find_unlisted_space_ids(0, 2);
+            assert_eq!(space_ids, vec![SPACE1, SPACE2]);
+        });
+    }
+
+    #[test]
+    fn find_unlisted_space_ids_should_work_with_zero_offset() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            assert_ok!(
+                _update_space(
+                    None,
+                    Some(SPACE1),
+                    Some(
+                        space_update(
+                            None,
+                            None,
+                            Some(Content::None),
+                            Some(true),
+                            None
+                        )
+                    )
+                )
+            );
+
+            let space_ids = Spaces::find_unlisted_space_ids(0, 1);
+            assert_eq!(space_ids, vec![SPACE1]);
+        });
+    }
+
+    #[test]
+    fn find_unlisted_space_ids_should_work_with_zero_limit() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            assert_ok!(
+                _update_space(
+                    None,
+                    Some(SPACE1),
+                    Some(
+                        space_update(
+                            None,
+                            None,
+                            Some(Content::None),
+                            Some(true),
+                            None
+                        )
+                    )
+                )
+            );
+
+            let space_ids = Spaces::find_unlisted_space_ids(1, 0);
+            assert_eq!(space_ids, vec![]);
+        });
+    }
+
+    #[test]
+    fn find_unlisted_space_ids_should_work_with_zero_offset_and_zero_limit() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            assert_ok!(
+                _update_space(
+                    None,
+                    Some(SPACE1),
+                    Some(
+                        space_update(
+                            None,
+                            None,
+                            Some(Content::None),
+                            Some(true),
+                            None
+                        )
+                    )
+                )
+            );
+
+            let space_ids = Spaces::find_unlisted_space_ids(0, 0);
+            assert_eq!(space_ids, vec![]);
+        });
+    }*/
+
+    // --------------------------------------------------------------------------------------------
 
     // Post tests
     #[test]
@@ -2106,6 +2259,144 @@ mod tests {
         });
     }
 
+    // TODO: refactor or remove. Deprecated tests
+    // Find public post ids tests
+    // --------------------------------------------------------------------------------------------
+    /*#[test]
+    fn find_public_post_ids_in_space_should_work() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_ok!(_create_post(None, Some(Some(SPACE1)), None, None));
+
+            let post_ids = Posts::find_public_post_ids_in_space(SPACE1, 0, 3);
+            assert_eq!(post_ids, vec![POST1, POST2]);
+        });
+    }
+
+    #[test]
+    fn find_public_post_ids_in_space_should_work_with_zero_offset() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            let post_ids = Posts::find_public_post_ids_in_space(SPACE1, 0, 1);
+            assert_eq!(post_ids, vec![POST1]);
+        });
+    }
+
+    #[test]
+    fn find_public_post_ids_in_space_should_work_with_zero_limit() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            let post_ids = Posts::find_public_post_ids_in_space(SPACE1, 1, 0);
+            assert_eq!(post_ids, vec![POST1]);
+        });
+    }
+
+    #[test]
+    fn find_public_post_ids_in_space_should_work_with_zero_offset_and_zero_limit() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            let post_ids = Posts::find_public_post_ids_in_space(SPACE1, 0, 0);
+            assert_eq!(post_ids, vec![]);
+        });
+    }
+
+    // Find unlisted post ids tests
+    // --------------------------------------------------------------------------------------------
+
+    #[test]
+    fn find_unlisted_post_ids_in_space_should_work() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_ok!(_create_post(None, Some(Some(SPACE1)), None, None));
+            assert_ok!(
+                _update_post(
+                    None,
+                    None,
+                    Some(
+                        post_update(
+                            None,
+                            Some(Content::None),
+                            Some(true))
+                    )
+                )
+            );
+            assert_ok!(
+                _update_post(
+                    None,
+                    Some(POST2),
+                    Some(
+                        post_update(
+                            None,
+                            Some(Content::None),
+                            Some(true))
+                    )
+                )
+            );
+
+            let post_ids = Posts::find_unlisted_post_ids_in_space(SPACE1, 0, 3);
+            assert_eq!(post_ids, vec![POST1, POST2]);
+        });
+    }
+
+    #[test]
+    fn find_unlisted_post_ids_in_space_should_work_with_zero_offset() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_ok!(
+                _update_post(
+                    None,
+                    None,
+                    Some(
+                        post_update(
+                            None,
+                            Some(Content::None),
+                            Some(true))
+                    )
+                )
+            );
+
+            let post_ids = Posts::find_unlisted_post_ids_in_space(SPACE1, 0, 1);
+            assert_eq!(post_ids, vec![POST1]);
+        });
+    }
+
+    #[test]
+    fn find_unlisted_post_ids_in_space_should_work_with_zero_limit() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_ok!(
+                _update_post(
+                    None,
+                    None,
+                    Some(
+                        post_update(
+                            None,
+                            Some(Content::None),
+                            Some(true))
+                    )
+                )
+            );
+
+            let post_ids = Posts::find_unlisted_post_ids_in_space(SPACE1, 1, 0);
+            assert_eq!(post_ids, vec![POST1]);
+        });
+    }
+
+    #[test]
+    fn find_unlisted_post_ids_in_space_should_work_with_zero_offset_and_zero_limit() {
+        ExtBuilder::build_with_post().execute_with(|| {
+            assert_ok!(
+                _update_post(
+                    None,
+                    None,
+                    Some(
+                        post_update(
+                            None,
+                            Some(Content::None),
+                            Some(true))
+                    )
+                )
+            );
+
+            let post_ids = Posts::find_unlisted_post_ids_in_space(SPACE1, 0, 0);
+            assert_eq!(post_ids, vec![]);
+        });
+    }*/
+    // --------------------------------------------------------------------------------------------
+
     // Comment tests
     #[test]
     fn create_comment_should_work() {
@@ -2232,7 +2523,7 @@ mod tests {
         ExtBuilder::build_with_post().execute_with(|| {
             assert_ok!(_create_comment(None, None, Some(None), None)); // PostId 2
 
-            for parent_id in 2..11 as PostId {
+            for parent_id in 2..11_u64 {
                 assert_ok!(_create_comment(None, None, Some(Some(parent_id)), None)); // PostId N (last = 10)
             }
 
@@ -2401,7 +2692,7 @@ mod tests {
     #[test]
     fn create_post_reaction_should_fail_when_trying_to_react_in_hidden_space() {
         ExtBuilder::build_with_post().execute_with(|| {
-            
+
             // Hide the space
             assert_ok!(_update_space(
                 None,
@@ -2416,7 +2707,7 @@ mod tests {
     #[test]
     fn create_post_reaction_should_fail_when_trying_to_react_on_hidden_post() {
         ExtBuilder::build_with_post().execute_with(|| {
-            
+
             // Hide the post
             assert_ok!(_update_post(
                 None,

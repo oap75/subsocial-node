@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-profile-follows'
-version = '0.6.0'
+version = '0.6.1'
 authors = ['DappForce <dappforce@pm.me>']
 edition = '2018'
 license = 'GPL-3.0-only'

@@ -1,6 +1,6 @@
 [package]
 name = 'subsocial-runtime'
-version = '0.6.0'
+version = '0.6.1'
 authors = ['DappForce <dappforce@pm.me>']
 edition = '2018'
 license = 'GPL-3.0-only'
@@ -52,6 +52,15 @@ pallet-spaces = { default-features = false, path = '../pallets/spaces' }
 
 #pallet-subscriptions = { default-features = false, path = '../pallets/subscriptions' }
 pallet-utils = { default-features = false, path = '../pallets/utils' }
+
+# Custom Runtime APIs
+posts-runtime-api = { default-features = false, path = '../pallets/posts/rpc/runtime-api' }
+profile-follows-runtime-api = { default-features = false, path = '../pallets/profile-follows/rpc/runtime-api' }
+profiles-runtime-api = { default-features = false, path = '../pallets/profiles/rpc/runtime-api' }
+reactions-runtime-api = { default-features = false, path = '../pallets/reactions/rpc/runtime-api' }
+roles-runtime-api = { default-features = false, path = '../pallets/roles/rpc/runtime-api' }
+space-follows-runtime-api = { default-features = false, path = '../pallets/space-follows/rpc/runtime-api' }
+spaces-runtime-api = { default-features = false, path = '../pallets/spaces/rpc/runtime-api' }
 
 # Substrate dependencies
 frame-benchmarking = { default-features = false, optional = true, version = '2.0.1' }
@@ -146,4 +155,11 @@ std = [
 #    'session-keys/std',
 #    'pallet-subscriptions/std',
     'pallet-utils/std',
+    'posts-runtime-api/std',
+    'profile-follows-runtime-api/std',
+    'profiles-runtime-api/std',
+    'reactions-runtime-api/std',
+    'roles-runtime-api/std',
+    'space-follows-runtime-api/std',
+    'spaces-runtime-api/std',
 ]
