@@ -302,6 +302,10 @@ mod tests {
             assert_ok!(_create_default_space());
         }
 
+        fn add_space_with_custom_permissions(permissions: SpacePermissions) {
+            assert_ok!(_create_space(None, None, None, Some(Some(permissions))));
+        }
+
         fn add_space_with_no_handle() {
             assert_ok!(_create_space(None, Some(None), None, None));
         }
@@ -398,26 +402,8 @@ mod tests {
 
         /// Custom ext configuration with space that has overridden permission 'CreatePost' to 'everyone'
         pub fn build_with_space_can_post_permission(permissions: SpacePermissions) -> TestExternalities {
-            let mut storage = system::GenesisConfig::default()
-              .build_storage::<TestRuntime>()
-              .unwrap();
-
-            Self::configure_storages(&mut storage);
-
-            let mut ext = TestExternalities::from(storage);
-            ext.execute_with(|| {
-                System::set_block_number(1);
-
-                assert_ok!(
-                    _create_space(
-                        None,
-                        None,
-                        None,
-                        Some(Some(permissions))
-                    )
-                );
-            });
-
+            let mut ext = Self::build();
+            ext.execute_with(|| Self::add_space_with_custom_permissions(permissions));
             ext
         }
     }
