@@ -1,17 +1,22 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get};
-use pallet_utils::{SpaceId, WhoAndWhen};
-use sp_runtime::{RuntimeDebug, traits::Zero};
-use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::prelude::*;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_runtime::{RuntimeDebug, traits::Zero};
+
+use frame_support::{
+  decl_error, decl_event, decl_module, decl_storage, ensure,
+  traits::Get
+};
 use frame_system::{self as system, ensure_signed};
+
+use pallet_utils::{SpaceId, WhoAndWhen};
 
 pub mod functions;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
 pub struct SpaceOwners<T: Trait> {
@@ -40,6 +45,7 @@ type ChangeId = u64;
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait
   + pallet_timestamp::Trait
+  + pallet_utils::Trait
 {
   /// The overarching event type.
   type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -112,15 +118,25 @@ decl_error! {
 
 // This pallet's storage items.
 decl_storage! {
-  trait Store for Module<T: Trait> as SpaceOwnersModule {
-    SpaceOwnersBySpaceById get(space_owners_by_space_id): map SpaceId => Option<SpaceOwners<T>>;
-    SpaceIdsOwnedByAccountId get(space_ids_owned_by_account_id): map T::AccountId => BTreeSet<SpaceId> = BTreeSet::new();
+  trait Store for Module<T: Trait> as SpaceMultiOwnershipModule {
+    SpaceOwnersBySpaceById get(fn space_owners_by_space_id):
+      map hasher(twox_64_concat) SpaceId => Option<SpaceOwners<T>>;
 
-    NextChangeId get(next_change_id): ChangeId = 1;
-    ChangeById get(change_by_id): map ChangeId => Option<Change<T>>;
-    PendingChangeIdBySpaceId get(pending_change_id_by_space_id): map SpaceId => Option<ChangeId>;
-    PendingChangeIds get(pending_change_ids): BTreeSet<ChangeId> = BTreeSet::new();
-    ExecutedChangeIdsBySpaceId get(executed_change_ids_by_space_id): map SpaceId => Vec<ChangeId>;
+    SpaceIdsOwnedByAccountId get(fn space_ids_owned_by_account_id):
+      map hasher(twox_64_concat) T::AccountId => BTreeSet<SpaceId> = BTreeSet::new();
+
+    NextChangeId get(fn next_change_id): ChangeId = 1;
+
+    ChangeById get(fn change_by_id):
+      map hasher(twox_64_concat) ChangeId => Option<Change<T>>;
+
+    PendingChangeIdBySpaceId get(fn pending_change_id_by_space_id):
+      map hasher(twox_64_concat) SpaceId => Option<ChangeId>;
+
+    PendingChangeIds get(fn pending_change_ids): BTreeSet<ChangeId> = BTreeSet::new();
+
+    ExecutedChangeIdsBySpaceId get(fn executed_change_ids_by_space_id):
+      map hasher(twox_64_concat) SpaceId => Vec<ChangeId>;
   }
 }
 
@@ -149,6 +165,7 @@ decl_module! {
       Self::delete_expired_changes(n);
     }
 
+    #[weight = T::DbWeight::get().reads_writes(2, 2) + 10_000]
     pub fn create_space_owners(
       origin,
       space_id: SpaceId,
@@ -178,7 +195,7 @@ decl_module! {
 
       let new_space_owners = SpaceOwners {
         created: WhoAndWhen::<T>::new(who.clone()),
-        space_id: space_id,
+        space_id,
         owners: unique_owners.clone(),
         threshold,
         changes_count: 0
@@ -193,6 +210,7 @@ decl_module! {
       Self::deposit_event(RawEvent::SpaceOwnersCreated(who, space_id));
     }
 
+    #[weight = T::DbWeight::get().reads_writes(5, 4) + 10_000]
     pub fn propose_change(
       origin,
       space_id: SpaceId,
@@ -238,9 +256,9 @@ decl_module! {
         created: WhoAndWhen::<T>::new(who.clone()),
         id: change_id,
         space_id,
-        add_owners: add_owners,
-        remove_owners: remove_owners,
-        new_threshold: new_threshold,
+        add_owners,
+        remove_owners,
+        new_threshold,
         notes,
         confirmed_by: Vec::new(),
         expires_at: <system::Module<T>>::block_number() + T::BlocksToLive::get()
@@ -259,6 +277,7 @@ decl_module! {
       }
     }
 
+    #[weight = T::DbWeight::get().reads_writes(3, 1) + 10_000]
     pub fn confirm_change(
       origin,
       space_id: SpaceId,
@@ -290,6 +309,7 @@ decl_module! {
       Self::deposit_event(RawEvent::ChangeConfirmed(who, space_id, change_id));
     }
 
+    #[weight = T::DbWeight::get().reads_writes(4, 3) + 10_000]
     pub fn cancel_change(
       origin,
       space_id: SpaceId,

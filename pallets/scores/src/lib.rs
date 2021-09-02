@@ -9,13 +9,13 @@ use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use frame_system::{self as system};
 
-use pallet_posts::{PostScores, Post, PostById, PostExtension, PostId};
+use pallet_posts::{PostScores, Post, PostById, PostExtension};
 use pallet_profile_follows::{BeforeAccountFollowed, BeforeAccountUnfollowed};
 use pallet_profiles::{Module as Profiles, SocialAccountById};
 use pallet_reactions::{PostReactionScores, ReactionKind};
 use pallet_space_follows::{BeforeSpaceFollowed, BeforeSpaceUnfollowed};
 use pallet_spaces::{Space, SpaceById};
-use pallet_utils::log_2;
+use pallet_utils::{log_2, PostId};
 
 #[derive(Encode, Decode, Clone, Copy, Eq, PartialEq, RuntimeDebug)]
 pub enum ScoringAction {
@@ -322,8 +322,8 @@ impl<T: Trait> Module<T> {
 
     fn smooth_reputation(reputation: u32) -> u8 {
         log_2(reputation).map_or(1, |r| {
-            let d = (reputation as u64 - (2 as u64).pow(r)) * 100
-                / (2 as u64).pow(r);
+            let d = (reputation as u64 - (2_u64).pow(r)) * 100
+                / (2_u64).pow(r);
 
             // We can safely cast this result to i16 because a score diff for u32::MAX is 32.
             (((r + 1) * 100 + d as u32) / 100) as u8

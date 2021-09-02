@@ -9,7 +9,9 @@ use sp_std::prelude::*;
 use frame_system::{self as system, ensure_signed};
 
 use pallet_profiles::{Module as Profiles, SocialAccountById};
-use pallet_utils::vec_remove_on;
+use pallet_utils::remove_from_vec;
+
+pub mod rpc;
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait
@@ -119,8 +121,8 @@ decl_module! {
 
       <SocialAccountById<T>>::insert(follower.clone(), follower_account);
       <SocialAccountById<T>>::insert(account.clone(), followed_account);
-      <AccountsFollowedByAccount<T>>::mutate(follower.clone(), |account_ids| vec_remove_on(account_ids, account.clone()));
-      <AccountFollowers<T>>::mutate(account.clone(), |account_ids| vec_remove_on(account_ids, follower.clone()));
+      <AccountsFollowedByAccount<T>>::mutate(follower.clone(), |account_ids| remove_from_vec(account_ids, account.clone()));
+      <AccountFollowers<T>>::mutate(account.clone(), |account_ids| remove_from_vec(account_ids, follower.clone()));
       <AccountFollowedByAccount<T>>::remove((follower.clone(), account.clone()));
 
       Self::deposit_event(RawEvent::AccountUnfollowed(follower, account));

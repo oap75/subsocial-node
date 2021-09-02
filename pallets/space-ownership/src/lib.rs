@@ -11,7 +11,7 @@ use frame_system::{self as system, ensure_signed};
 
 use df_traits::moderation::IsAccountBlocked;
 use pallet_spaces::{Module as Spaces, SpaceById, SpaceIdsByOwner};
-use pallet_utils::{Error as UtilsError, SpaceId, vec_remove_on};
+use pallet_utils::{Error as UtilsError, SpaceId, remove_from_vec};
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait
@@ -73,7 +73,7 @@ decl_module! {
       space.ensure_space_owner(who.clone())?;
 
       ensure!(who != transfer_to, Error::<T>::CannotTranferToCurrentOwner);
-      ensure!(!T::IsAccountBlocked::is_account_blocked(transfer_to.clone(), space_id), UtilsError::<T>::AccountIsBlocked);
+      ensure!(T::IsAccountBlocked::is_allowed_account(transfer_to.clone(), space_id), UtilsError::<T>::AccountIsBlocked);
 
       <PendingSpaceOwner<T>>::insert(space_id, transfer_to.clone());
 
@@ -101,7 +101,7 @@ decl_module! {
       <SpaceById<T>>::insert(space_id, space);
 
       // Remove space id from the list of spaces by old owner
-      <SpaceIdsByOwner<T>>::mutate(old_owner.clone(), |space_ids| vec_remove_on(space_ids, space_id));
+      <SpaceIdsByOwner<T>>::mutate(old_owner, |space_ids| remove_from_vec(space_ids, space_id));
 
       // Add space id to the list of spaces by new owner
       <SpaceIdsByOwner<T>>::mutate(new_owner.clone(), |ids| ids.push(space_id));

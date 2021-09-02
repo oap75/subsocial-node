@@ -14,7 +14,9 @@ use df_traits::{
 };
 use pallet_profiles::{Module as Profiles, SocialAccountById};
 use pallet_spaces::{BeforeSpaceCreated, Module as Spaces, Space, SpaceById};
-use pallet_utils::{Error as UtilsError, SpaceId, vec_remove_on};
+use pallet_utils::{Error as UtilsError, SpaceId, remove_from_vec};
+
+pub mod rpc;
 
 /// The pallet's configuration trait.
 pub trait Trait: system::Trait
@@ -84,7 +86,7 @@ decl_module! {
       let space = &mut Spaces::require_space(space_id)?;
       ensure!(!space.hidden, Error::<T>::CannotFollowHiddenSpace);
 
-      ensure!(!T::IsAccountBlocked::is_account_blocked(follower.clone(), space.id), UtilsError::<T>::AccountIsBlocked);
+      ensure!(T::IsAccountBlocked::is_allowed_account(follower.clone(), space.id), UtilsError::<T>::AccountIsBlocked);
 
       Self::add_space_follower(follower, space)?;
       <SpaceById<T>>::insert(space_id, space);
@@ -133,8 +135,8 @@ impl<T: Trait> Module<T> {
 
         T::BeforeSpaceUnfollowed::before_space_unfollowed(follower.clone(), space)?;
 
-        <SpacesFollowedByAccount<T>>::mutate(follower.clone(), |space_ids| vec_remove_on(space_ids, space_id));
-        <SpaceFollowers<T>>::mutate(space_id, |account_ids| vec_remove_on(account_ids, follower.clone()));
+        <SpacesFollowedByAccount<T>>::mutate(follower.clone(), |space_ids| remove_from_vec(space_ids, space_id));
+        <SpaceFollowers<T>>::mutate(space_id, |account_ids| remove_from_vec(account_ids, follower.clone()));
         <SpaceFollowedByAccount<T>>::remove((follower.clone(), space_id));
         <SocialAccountById<T>>::insert(follower.clone(), social_account);
         <SpaceById<T>>::insert(space_id, space);

@@ -15,9 +15,9 @@ use frame_support::{
 };
 use frame_system::{self as system, ensure_signed};
 
-use pallet_posts::{Module as Posts, PostId};
+use pallet_posts::Module as Posts;
 use pallet_spaces::{Module as Spaces};
-use pallet_utils::{Content, WhoAndWhen, SpaceId};
+use pallet_utils::{Content, WhoAndWhen, SpaceId, PostId};
 
 type BalanceOf<T> = <<T as pallet_utils::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
@@ -173,7 +173,7 @@ decl_module! {
         origin,
         recipient: DonationRecipient<T::AccountId>,
         amount: BalanceOf<T>,
-        comment_content: Content
+        _comment_content: Content
     ) -> DispatchResult {
         let supporter = ensure_signed(origin)?;
 
@@ -205,7 +205,7 @@ decl_module! {
         };
 
         // Transfer donated tokens from a supporter to a donation wallet of this reason.
-        T::Currency::transfer(&supporter, &donation_wallet, amount, ExistenceRequirement::KeepAlive)?;
+        <T as pallet_utils::Trait>::Currency::transfer(&supporter, &donation_wallet, amount, ExistenceRequirement::KeepAlive)?;
 
         DonationById::<T>::insert(donation_id, donation);
         DonationIdsBySupporter::<T>::mutate(supporter.clone(), |ids| ids.push(donation_id));

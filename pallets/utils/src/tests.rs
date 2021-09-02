@@ -1,6 +1,4 @@
-use crate::{mock::*, vec_remove_on, log_2};
-
-use sp_std::iter::FromIterator;
+use crate::{mock::*, remove_from_vec, log_2};
 
 #[test]
 fn log_2_should_work() {
@@ -26,18 +24,18 @@ fn log_2_should_work() {
 }
 
 #[test]
-fn vec_remove_on_should_work_with_zero_elements() {
+fn remove_from_vec_should_work_with_zero_elements() {
     ExtBuilder::build().execute_with(|| {
         let element: u16 = 2;
         let vector: &mut Vec<u16> = &mut vec![];
 
-        vec_remove_on(vector, element);
+        remove_from_vec(vector, element);
         assert!(vector.is_empty());
     });
 }
 
 #[test]
-fn vec_remove_on_should_work_with_last_element() {
+fn remove_from_vec_should_work_with_last_element() {
     ExtBuilder::build().execute_with(|| {
         let element: u16 = 2;
         let vector: &mut Vec<u16> = &mut vec![6, 2];
@@ -45,13 +43,13 @@ fn vec_remove_on_should_work_with_last_element() {
         vector.remove(0);
         assert_eq!(vector, &mut vec![2]);
 
-        vec_remove_on(vector, element);
+        remove_from_vec(vector, element);
         assert!(vector.is_empty());
     });
 }
 
 #[test]
-fn vec_remove_on_should_work_with_two_elements() {
+fn remove_from_vec_should_work_with_two_elements() {
     ExtBuilder::build().execute_with(|| {
         let element: u16 = 2;
         let vector: &mut Vec<u16> = &mut vec![6, 2, 7];
@@ -59,7 +57,7 @@ fn vec_remove_on_should_work_with_two_elements() {
         vector.remove(0);
         assert_eq!(vector, &mut vec![2, 7]);
 
-        vec_remove_on(vector, element);
+        remove_from_vec(vector, element);
         assert_eq!(vector, &mut vec![7]);
     });
 }
@@ -75,19 +73,19 @@ fn convert_users_vec_to_btree_set_should_work() {
 
         assert_eq!(
             _convert_users_vec_to_btree_set(vec![USER1]).ok().unwrap(),
-            UsersSet::from_iter(vec![USER1].into_iter())
+            vec![USER1].into_iter().collect()
         );
 
         // Duplicates should produce 1 unique element
         assert_eq!(
             _convert_users_vec_to_btree_set(vec![USER1, USER1, USER3]).ok().unwrap(),
-            UsersSet::from_iter(vec![USER1, USER3].into_iter())
+            vec![USER1, USER3].into_iter().collect()
         );
 
         // Randomly filled vec should produce sorted set
         assert_eq!(
             _convert_users_vec_to_btree_set(vec![USER3, USER1, USER3, USER2, USER1]).ok().unwrap(),
-            UsersSet::from_iter(vec![USER1, USER2, USER3].into_iter())
+            vec![USER1, USER2, USER3].into_iter().collect()
         );
     });
 }

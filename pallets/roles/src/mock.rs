@@ -4,7 +4,6 @@ use sp_core::H256;
 use sp_std::{
     collections::btree_set::BTreeSet,
     prelude::Vec,
-    iter::FromIterator
 };
 use sp_io::TestExternalities;
 
@@ -21,8 +20,6 @@ use frame_system as system;
 use pallet_permissions::{
     SpacePermission,
     SpacePermission as SP,
-    SpacePermissions,
-    SpacePermissionSet
 };
 use df_traits::{SpaceForRoles, SpaceFollowsProvider, SpaceForRolesProvider};
 use pallet_utils::{SpaceId, User, Content};
@@ -61,10 +58,11 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = pallet_balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 parameter_types! {
@@ -75,6 +73,7 @@ impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -87,6 +86,8 @@ impl pallet_balances::Trait for Test {
     type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 parameter_types! {
@@ -101,60 +102,7 @@ impl pallet_utils::Trait for Test {
     type MaxHandleLen = MaxHandleLen;
 }
 
-parameter_types! {
-  pub DefaultSpacePermissions: SpacePermissions = SpacePermissions {
-
-    // No permissions disabled by default
-    none: None,
-
-    everyone: Some(SpacePermissionSet::from_iter(vec![
-	  SP::UpdateOwnSubspaces,
-	  SP::DeleteOwnSubspaces,
-	  SP::HideOwnSubspaces,
-
-	  SP::UpdateOwnPosts,
-	  SP::DeleteOwnPosts,
-	  SP::HideOwnPosts,
-
-	  SP::CreateComments,
-	  SP::UpdateOwnComments,
-	  SP::DeleteOwnComments,
-	  SP::HideOwnComments,
-
-	  SP::Upvote,
-	  SP::Downvote,
-	  SP::Share,
-    ].into_iter())),
-
-    // Followers can do everything that everyone else can.
-    follower: None,
-
-    space_owner: Some(SpacePermissionSet::from_iter(vec![
-      SP::ManageRoles,
-      SP::RepresentSpaceInternally,
-      SP::RepresentSpaceExternally,
-      SP::OverrideSubspacePermissions,
-      SP::OverridePostPermissions,
-
-      SP::CreateSubspaces,
-      SP::CreatePosts,
-
-      SP::UpdateSpace,
-      SP::UpdateAnySubspace,
-      SP::UpdateAnyPost,
-
-      SP::DeleteAnySubspace,
-      SP::DeleteAnyPost,
-
-      SP::HideAnySubspace,
-      SP::HideAnyPost,
-      SP::HideAnyComment,
-
-      SP::SuggestEntityStatus,
-      SP::UpdateEntityStatus,
-    ].into_iter())),
-  };
-}
+use pallet_permissions::default_permissions::DefaultSpacePermissions;
 
 impl pallet_permissions::Trait for Test {
     type DefaultSpacePermissions = DefaultSpacePermissions;
@@ -164,20 +112,12 @@ parameter_types! {
   pub const MaxUsersToProcessPerDeleteRole: u16 = 20;
 }
 
-impl df_traits::moderation::IsAccountBlocked for Test {
-    type AccountId = u64;
-
-    fn is_account_blocked(_account: Self::AccountId, _scope: SpaceId) -> bool {
-        false
-    }
-}
-
 impl Trait for Test {
     type Event = ();
     type MaxUsersToProcessPerDeleteRole = MaxUsersToProcessPerDeleteRole;
     type Spaces = Roles;
     type SpaceFollows = Roles;
-    type IsAccountBlocked = Self;
+    type IsAccountBlocked = ();
     type IsContentBlocked = ();
 }
 
@@ -347,9 +287,7 @@ pub(crate) fn _update_role(
         update.unwrap_or_else(|| self::role_update(
             Some(true),
             Some(self::updated_role_content_ipfs()),
-            Some(
-                BTreeSet::from_iter(self::permission_set_updated().into_iter())
-            )
+            Some(self::permission_set_updated().into_iter().collect())
         )),
     )
 }

@@ -1,10 +1,10 @@
 pub mod currency {
-	use node_primitives::Balance;
+	use crate::Balance;
 
-	pub const SMNS: Balance = 1_000_000_000_000;
-	pub const DOLLARS: Balance = SMNS;             // 1_000_000_000_000
-	pub const CENTS: Balance = DOLLARS / 100;      // 10_000_000_000
-	pub const MILLICENTS: Balance = CENTS / 1_000; // 10_000_000
+	pub const UNITS: Balance = 100_000_000_000;
+	pub const DOLLARS: Balance = UNITS;            // 100_000_000_000
+	pub const CENTS: Balance = DOLLARS / 100;      // 1_000_000_000
+	pub const MILLICENTS: Balance = CENTS / 1_000; // 1_000_000
 
 	pub const fn deposit(items: u32, bytes: u32) -> Balance {
 		items as Balance * 15 * CENTS + (bytes as Balance) * 6 * CENTS
@@ -12,7 +12,7 @@ pub mod currency {
 }
 
 pub mod time {
-	use node_primitives::{Moment, BlockNumber};
+	use crate::{Moment, BlockNumber};
 
 	pub const MILLISECS_PER_BLOCK: Moment = 6000;
 	pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;

@@ -6,7 +6,7 @@ const path = require('path');
 
 const pallets = [
   "donations",
-  "faucet",
+  "faucets",
   "moderation",
   "permissions",
   "post-history",

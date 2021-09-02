@@ -17,7 +17,12 @@ impl<T: Trait> Module<T> {
       Ok(Self::role_by_id(role_id).ok_or(Error::<T>::RoleNotFound)?)
   }
 
+  /// Ensure that this account is not blocked and has 'ManageRoles' permission in a given space
   pub fn ensure_role_manager(account: T::AccountId, space_id: SpaceId) -> DispatchResult {
+    ensure!(
+      T::IsAccountBlocked::is_allowed_account(account.clone(), space_id),
+      UtilsError::<T>::AccountIsBlocked
+    );
     Self::ensure_user_has_space_permission_with_load_space(
       User::Account(account),
       space_id,
@@ -92,7 +97,7 @@ impl<T: Trait> Module<T> {
     error: DispatchError,
   ) -> DispatchResult {
 
-    let role_ids = Self::role_ids_by_user_in_space((user, space_id));
+    let role_ids = Self::role_ids_by_user_in_space(user, space_id);
 
     for role_id in role_ids {
       if let Some(role) = Self::role_by_id(role_id) {
@@ -164,11 +169,11 @@ impl<T: Trait> Role<T> {
     let mut users_by_role = <UsersByRoleId<T>>::take(self.id);
 
     for user in users.iter() {
-      let role_idx_by_user_opt = Module::<T>::role_ids_by_user_in_space((&user, self.space_id)).iter()
+      let role_idx_by_user_opt = Module::<T>::role_ids_by_user_in_space(&user, self.space_id).iter()
         .position(|x| { *x == self.id });
 
       if let Some(role_idx) = role_idx_by_user_opt {
-        <RoleIdsByUserInSpace<T>>::mutate((user, self.space_id), |n| { n.swap_remove(role_idx) });
+        <RoleIdsByUserInSpace<T>>::mutate(user, self.space_id, |n| { n.swap_remove(role_idx) });
       }
 
       let user_idx_by_role_opt = users_by_role.iter().position(|x| { x == user });

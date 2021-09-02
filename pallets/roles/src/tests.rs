@@ -6,7 +6,6 @@ use frame_support::{
 };
 use pallet_utils::{Error as UtilsError};
 
-
 #[test]
 fn create_role_should_work() {
     ExtBuilder::build().execute_with(|| {
@@ -25,7 +24,7 @@ fn create_role_should_work() {
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
             role.permissions,
-            BTreeSet::from_iter(self::permission_set_default().into_iter())
+            self::permission_set_default().into_iter().collect()
         );
     });
 }
@@ -56,7 +55,7 @@ fn create_role_should_work_with_a_few_roles() {
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
             role.permissions,
-            BTreeSet::from_iter(self::permission_set_updated().into_iter())
+            self::permission_set_updated().into_iter().collect()
         );
     });
 }
@@ -154,7 +153,7 @@ fn update_role_should_work() {
         assert_eq!(role.content, self::updated_role_content_ipfs());
         assert_eq!(
             role.permissions,
-            BTreeSet::from_iter(self::permission_set_updated().into_iter())
+            self::permission_set_updated().into_iter().collect()
         );
     });
 }
@@ -171,7 +170,7 @@ fn update_role_should_work_with_empty_perms_provided_no_changes() {
                     self::role_update(
                         Some(true),
                         None,
-                        Some(BTreeSet::from_iter(self::permission_set_empty().into_iter()))
+                        Some(self::permission_set_empty().into_iter().collect())
                     )
                 )
             )
@@ -186,7 +185,7 @@ fn update_role_should_work_with_empty_perms_provided_no_changes() {
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
             role.permissions,
-            BTreeSet::from_iter(self::permission_set_default().into_iter())
+            self::permission_set_default().into_iter().collect()
         );
     });
 }
@@ -203,9 +202,7 @@ fn update_role_should_work_with_same_perms_provided_no_update() {
                     self::role_update(
                         None, // No changes for disabled
                         None, // No content changes
-                        Some(
-                            BTreeSet::from_iter(self::permission_set_default().into_iter())
-                        ) // The same permissions_set (no changes should apply)
+                        Some(self::permission_set_default().into_iter().collect()) // The same permissions_set (no changes should apply)
                     )
                 )
             )
@@ -217,7 +214,7 @@ fn update_role_should_work_with_same_perms_provided_no_update() {
         assert!(role.updated.is_none());
         assert_eq!(
             role.permissions,
-            BTreeSet::from_iter(self::permission_set_default().into_iter())
+            self::permission_set_default().into_iter().collect()
         );
     });
 }
@@ -232,7 +229,7 @@ fn update_role_should_work_with_a_few_roles() {
                 Some(self::role_update(
                     None,
                     None,
-                    Some(BTreeSet::from_iter(self::permission_set_updated().into_iter()))
+                    Some(self::permission_set_updated().into_iter().collect())
                 ))
             )
         );
@@ -249,7 +246,7 @@ fn update_role_should_work_with_a_few_roles() {
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
             role.permissions,
-            BTreeSet::from_iter(self::permission_set_updated().into_iter())
+            self::permission_set_updated().into_iter().collect()
         );
     });
 }
@@ -266,7 +263,7 @@ fn update_role_should_work_not_updated_all_the_same() {
                     self::role_update(
                         Some(false),
                         Some(self::default_role_content_ipfs()),
-                        Some(BTreeSet::from_iter(self::permission_set_default().into_iter()))
+                        Some(self::permission_set_default().into_iter().collect())
                     )
                 )
             )
@@ -284,7 +281,7 @@ fn update_role_should_work_not_updated_all_the_same() {
         assert_eq!(role.content, self::default_role_content_ipfs());
         assert_eq!(
             role.permissions,
-            BTreeSet::from_iter(self::permission_set_default().into_iter())
+            self::permission_set_default().into_iter().collect()
         );
     });
 }
@@ -345,7 +342,7 @@ fn update_role_should_fail_with_a_few_roles_no_permission() {
                 Some(self::role_update(
                     None,
                     None,
-                    Some(BTreeSet::from_iter(self::permission_set_default().into_iter()))
+                    Some(self::permission_set_default().into_iter().collect())
                 ))
             ), Error::<Test>::NoPermissionToManageRoles
         );
@@ -362,7 +359,7 @@ fn grant_role_should_work() {
 
         // Change whether data was stored correctly
         assert_eq!(Roles::users_by_role_id(ROLE1), vec![user.clone()]);
-        assert_eq!(Roles::role_ids_by_user_in_space((user, SPACE1)), vec![ROLE1]);
+        assert_eq!(Roles::role_ids_by_user_in_space(user, SPACE1), vec![ROLE1]);
     });
 }
 
@@ -380,7 +377,7 @@ fn grant_role_should_work_with_a_few_roles() {
 
         // Check whether data is stored correctly
         assert_eq!(Roles::users_by_role_id(ROLE1), vec![User::Account(ACCOUNT2), User::Account(ACCOUNT3)]);
-        assert_eq!(Roles::role_ids_by_user_in_space((user, SPACE1)), vec![ROLE1]);
+        assert_eq!(Roles::role_ids_by_user_in_space(user, SPACE1), vec![ROLE1]);
     });
 }
 
@@ -444,7 +441,7 @@ fn revoke_role_should_work() {
 
         // Change whether data was stored correctly
         assert!(Roles::users_by_role_id(ROLE1).is_empty());
-        assert!(Roles::role_ids_by_user_in_space((user, SPACE1)).is_empty());
+        assert!(Roles::role_ids_by_user_in_space(user, SPACE1).is_empty());
     });
 }
 
@@ -462,7 +459,7 @@ fn revoke_role_should_work_with_a_few_roles() {
 
         // Check whether data is stored correctly
         assert!(Roles::users_by_role_id(ROLE1).is_empty());
-        assert!(Roles::role_ids_by_user_in_space((user, SPACE1)).is_empty());
+        assert!(Roles::role_ids_by_user_in_space(user, SPACE1).is_empty());
     });
 }
 
@@ -521,7 +518,7 @@ fn delete_role_should_work() {
         assert!(Roles::role_by_id(ROLE1).is_none());
         assert!(Roles::users_by_role_id(ROLE1).is_empty());
         assert!(Roles::role_ids_by_space_id(SPACE1).is_empty());
-        assert!(Roles::role_ids_by_user_in_space((User::Account(ACCOUNT2), SPACE1)).is_empty());
+        assert!(Roles::role_ids_by_user_in_space(User::Account(ACCOUNT2), SPACE1).is_empty());
         assert_eq!(Roles::next_role_id(), ROLE2);
     });
 }
@@ -540,7 +537,7 @@ fn delete_role_should_work_with_a_few_roles() {
         assert!(Roles::role_by_id(ROLE1).is_none());
         assert!(Roles::users_by_role_id(ROLE1).is_empty());
         assert_eq!(Roles::role_ids_by_space_id(SPACE1), vec![ROLE2]);
-        assert_eq!(Roles::role_ids_by_user_in_space((User::Account(ACCOUNT2), SPACE1)), vec![ROLE2]);
+        assert_eq!(Roles::role_ids_by_user_in_space(User::Account(ACCOUNT2), SPACE1), vec![ROLE2]);
         assert_eq!(Roles::next_role_id(), ROLE3);
     });
 }
@@ -575,7 +572,7 @@ fn delete_role_should_fail_with_too_many_users_for_delete_role() {
 
         assert_ok!(_create_default_role()); // RoleId 1
         assert_ok!(_grant_role(None, None, Some(users))); // Grant RoleId 1 to ACCOUNT2-ACCOUNT20
-        assert_noop!(_delete_default_role(), Error::<Test>::TooManyUsersToDelete);
+        assert_noop!(_delete_default_role(), Error::<Test>::TooManyUsersToDeleteRole);
     });
 }
 
