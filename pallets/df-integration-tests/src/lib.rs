@@ -117,6 +117,7 @@ mod tests {
     }
 
     use pallet_permissions::default_permissions::DefaultSpacePermissions;
+
     impl pallet_permissions::Trait for TestRuntime {
         type DefaultSpacePermissions = DefaultSpacePermissions;
     }
@@ -412,7 +413,6 @@ mod tests {
                         None,
                         None,
                         None,
-                        None,
                         Some(Some(permissions))
                     )
                 );
@@ -461,7 +461,7 @@ mod tests {
     }
 
     fn everyone_can_create_post_permissions() -> SpacePermissions {
-        let mut default_permissions = default_space_permissions();
+        let mut default_permissions = DefaultSpacePermissions::get();
         default_permissions.everyone = default_permissions.everyone
           .map(|mut permissions| {
               permissions.insert(SP::CreatePosts);
@@ -474,21 +474,21 @@ mod tests {
     fn follower_space_permission_set() -> SpacePermissions {
         SpacePermissions {
             none: None,
-            follower: Some(SpacePermissionSet::from_iter(vec![SP::CreatePosts].into_iter())),
+            follower: Some(vec![SP::CreatePosts].into_iter().collect()),
             space_owner: None,
             everyone: None
         }
     }
 
     fn follower_can_create_post_permissions() -> SpacePermissions {
-        let mut default_permissions = default_space_permissions();
+        let mut default_permissions = DefaultSpacePermissions::get();
         default_permissions.follower = self::follower_space_permission_set().follower;
 
         default_permissions
     }
 
     fn space_owner_can_create_post_permissions() -> SpacePermissions {
-        let mut default_permissions = default_space_permissions();
+        let mut default_permissions = DefaultSpacePermissions::get();
         default_permissions.space_owner = default_permissions.space_owner
           .map(|mut permissions| {
               permissions.insert(SP::CreatePosts);
@@ -3811,7 +3811,7 @@ mod tests {
             assert!(SpaceOwnership::pending_space_owner(SPACE1).is_none());
 
             let owner_reserved_balance = Balances::reserved_balance(ACCOUNT1);
-            assert_eq!(owner_reserved_balance, Zero::zero());
+            assert!(owner_reserved_balance.is_zero());
 
             let recipient_reserved_balance = Balances::reserved_balance(ACCOUNT2);
             assert_eq!(recipient_reserved_balance, HANDLE_DEPOSIT);
