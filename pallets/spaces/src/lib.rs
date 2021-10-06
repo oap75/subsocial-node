@@ -93,6 +93,19 @@ pub struct SpaceUpdate {
     pub permissions: Option<Option<SpacePermissions>>,
 }
 
+#[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
+pub struct SpacesSettings {
+    pub handles_enabled: bool
+}
+
+impl Default for SpacesSettings {
+    fn default() -> Self {
+        Self {
+            handles_enabled: true,
+        }
+    }
+}
+
 type BalanceOf<T> =
   <<T as Config>::Currency as Currency<<T as system::Config>::AccountId>>::Balance;
 
@@ -146,11 +159,6 @@ decl_error! {
 
 pub const FIRST_SPACE_ID: u64 = 1;
 pub const RESERVED_SPACE_COUNT: u64 = 1000;
-
-#[derive(Encode, Decode, Clone, Eq, PartialEq, Default, RuntimeDebug)]
-pub struct SpacesSettings {
-    pub disable_handles: bool
-}
 
 // This pallet's storage items.
 decl_storage! {
@@ -501,7 +509,7 @@ impl<T: Config> Module<T> {
     }
 
     pub fn ensure_handles_enabled() -> DispatchResult {
-        ensure!(!Self::settings().disable_handles, Error::<T>::HandlesAreDisabled);
+        ensure!(Self::settings().handles_enabled, Error::<T>::HandlesAreDisabled);
         Ok(())
     }
 

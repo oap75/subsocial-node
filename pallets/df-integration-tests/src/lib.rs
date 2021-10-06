@@ -12,7 +12,7 @@ mod tests {
     use frame_support::{
         assert_ok, assert_noop,
         parameter_types,
-        dispatch::DispatchResult,
+        dispatch::{DispatchResult, DispatchError},
         storage::StorageMap,
     };
     use frame_system as system;
@@ -135,7 +135,6 @@ mod tests {
     }
 
     use pallet_permissions::default_permissions::DefaultSpacePermissions;
-    use frame_support::dispatch::DispatchError;
 
     impl pallet_permissions::Config for TestRuntime {
         type DefaultSpacePermissions = DefaultSpacePermissions;
@@ -458,11 +457,11 @@ mod tests {
     }
 
     fn space_settings_disable_handles() -> SpacesSettings {
-        SpacesSettings { disable_handles: true }
+        SpacesSettings { handles_enabled: false }
     }
 
     fn space_settings_enable_handles() -> SpacesSettings {
-        SpacesSettings { disable_handles: false }
+        SpacesSettings { handles_enabled: true }
     }
 
     fn post_content_ipfs() -> Content {
@@ -1712,8 +1711,8 @@ mod tests {
             assert_ok!(_update_space_settings_disable_handles());
 
             let spaces_settings = Spaces::settings();
-            // Ensure that `disable_handles` field is true
-            assert!(spaces_settings.disable_handles);
+            // Ensure that `handles_enabled` field is false
+            assert!(!spaces_settings.handles_enabled);
         });
     }
 
