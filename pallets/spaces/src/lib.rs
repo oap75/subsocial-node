@@ -1,16 +1,16 @@
 //! # Spaces Module
-//! 
+//!
 //! Spaces are the primary components of Subsocial. This module allows you to create a Space
 //! and customize it by updating its' owner(s), content, unique handle, and permissions.
-//! 
-//! To understand how Spaces fit into the Subsocial ecosystem, you can think of how 
-//! folders and files work in a file system. Spaces are similar to folders, that can contain Posts, 
-//! in this sense. The permissions of the Space and Posts can be customized so that a Space 
-//! could be as simple as a personal blog (think of a page on Facebook) or as complex as community 
+//!
+//! To understand how Spaces fit into the Subsocial ecosystem, you can think of how
+//! folders and files work in a file system. Spaces are similar to folders, that can contain Posts,
+//! in this sense. The permissions of the Space and Posts can be customized so that a Space
+//! could be as simple as a personal blog (think of a page on Facebook) or as complex as community
 //! (think of a subreddit) governed DAO.
-//! 
+//!
 //! Spaces can be compared to existing entities on web 2.0 platforms such as:
-//! 
+//!
 //! - Blogs on Blogger,
 //! - Publications on Medium,
 //! - Groups or pages on Facebook,
@@ -63,7 +63,7 @@ pub struct Space<T: Config> {
 
     pub content: Content,
 
-    /// Hidden field is used to recommend to end clients (web and mobile apps) that a particular 
+    /// Hidden field is used to recommend to end clients (web and mobile apps) that a particular
     /// space and its' posts should not be shown.
     pub hidden: bool,
 
@@ -78,7 +78,7 @@ pub struct Space<T: Config> {
 
     pub score: i32,
 
-    /// This allows you to override Subsocial's default permissions by enabling or disabling role 
+    /// This allows you to override Subsocial's default permissions by enabling or disabling role
     /// permissions.
     pub permissions: Option<SpacePermissions>,
 }
@@ -462,18 +462,6 @@ impl<T: Config> Space<T> {
     }
 }
 
-impl Default for SpaceUpdate {
-    fn default() -> Self {
-        SpaceUpdate {
-            parent_id: None,
-            handle: None,
-            content: None,
-            hidden: None,
-            permissions: None,
-        }
-    }
-}
-
 impl<T: Config> Module<T> {
 
     /// Check that there is a `Space` with such `space_id` in the storage
@@ -511,7 +499,7 @@ impl<T: Config> Module<T> {
             error,
         )
     }
-    
+
     pub fn ensure_handles_enabled() -> DispatchResult {
         ensure!(!Self::settings().disable_handles, Error::<T>::HandlesAreDisabled);
         Ok(())
