@@ -245,7 +245,7 @@ impl ExtBuilder {
             assert_ok!(_report_default_post());
 
             let space = Spaces::space_by_id(SPACE1).unwrap();
-            let accs = ACCOUNTS_SPACE_MODERATORS.clone();
+            let accs = accounts_space_moderators();
             for acc in accs.into_iter() {
                 let origin = Origin::signed(acc);
 
@@ -260,7 +260,6 @@ impl ExtBuilder {
 
 pub(crate) const ACCOUNT_SCOPE_OWNER: AccountId = 1;
 pub(crate) const ACCOUNT_NOT_MODERATOR: AccountId = 2;
-pub(crate) const ACCOUNTS_SPACE_MODERATORS: Vec<AccountId> = (3..23).collect::<Vec<AccountId>>();
 
 pub(crate) const SPACE1: SpaceId = RESERVED_SPACE_COUNT + 1;
 pub(crate) const SPACE2: SpaceId = SPACE1 + 1;
@@ -282,6 +281,10 @@ pub(crate) const fn empty_moderation_settings_update() -> SpaceModerationSetting
     SpaceModerationSettingsUpdate {
         autoblock_threshold: None
     }
+}
+
+pub(crate) fn accounts_space_moderators() -> Vec<AccountId> {
+    (3..23).collect()
 }
 
 pub(crate) fn create_space_and_post() {
