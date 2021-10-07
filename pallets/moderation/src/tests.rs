@@ -198,7 +198,7 @@ fn update_entity_status_should_work_for_status_blocked() {
             )
         );
 
-        // Check that post was removed from its space, 
+        // Check that post was removed from its space,
         // because when removing a post, we set its space to None
         let post = PostById::<Test>::get(POST1).unwrap();
         assert!(post.space_id.is_none());

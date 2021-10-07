@@ -13,7 +13,6 @@ use crate as moderation;
 
 use pallet_posts::PostExtension;
 use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
-use pallet_space_follows::add_space_follower;
 
 pub use pallet_utils::mock_functions::valid_content_ipfs;
 use pallet_utils::{Content, SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
@@ -245,12 +244,13 @@ impl ExtBuilder {
             create_space_and_post();
             assert_ok!(_report_default_post());
 
-            let space = &mut Spaces::space_by_id(SPACE1);
+            let space = Spaces::space_by_id(SPACE1).unwrap();
             let accs = ACCOUNTS_SPACE_MODERATORS.clone();
             for acc in accs.into_iter() {
-                add_space_follower(acc.clone(), space);
-                _suggest_entity_status(Some(Origin::signed(acc)),
-                                       None, None, None, None);
+                let origin = Origin::signed(acc);
+
+                assert_ok!(SpaceFollows::follow_space(origin.clone(), space.id));
+                assert_ok!(_suggest_entity_status(Some(origin), None, None, None, None));
             }
         });
 
