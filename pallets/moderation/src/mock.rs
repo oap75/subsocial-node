@@ -13,6 +13,7 @@ use crate as moderation;
 
 use pallet_posts::PostExtension;
 use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
+use pallet_space_follows::add_space_follower;
 
 pub use pallet_utils::mock_functions::valid_content_ipfs;
 use pallet_utils::{Content, SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
@@ -231,10 +232,35 @@ impl ExtBuilder {
 
         ext
     }
+
+    pub fn build_with_space_and_post_then_report_then_20_suggestions() -> TestExternalities {
+        let storage = system::GenesisConfig::default()
+            .build_storage::<Test>()
+            .unwrap();
+
+        let mut ext = TestExternalities::from(storage);
+        ext.execute_with(|| {
+            System::set_block_number(1);
+
+            create_space_and_post();
+            assert_ok!(_report_default_post());
+
+            let space = &mut Spaces::space_by_id(SPACE1);
+            let accs = ACCOUNTS_SPACE_MODERATORS.clone();
+            for acc in accs.into_iter() {
+                add_space_follower(acc.clone(), space);
+                _suggest_entity_status(Some(Origin::signed(acc)),
+                                       None, None, None, None);
+            }
+        });
+
+        ext
+    }
 }
 
 pub(crate) const ACCOUNT_SCOPE_OWNER: AccountId = 1;
 pub(crate) const ACCOUNT_NOT_MODERATOR: AccountId = 2;
+pub(crate) const ACCOUNTS_SPACE_MODERATORS: Vec<AccountId> = (3..23).collect::<Vec<AccountId>>();
 
 pub(crate) const SPACE1: SpaceId = RESERVED_SPACE_COUNT + 1;
 pub(crate) const SPACE2: SpaceId = SPACE1 + 1;

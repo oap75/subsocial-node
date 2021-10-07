@@ -153,6 +153,24 @@ fn suggest_entity_status_should_fail_when_origin_has_no_permission() {
     });
 }
 
+#[test]
+fn suggest_entity_status_should_ban_after_threshold() {
+    ExtBuilder::build_with_space_and_post_then_report_then_20_suggestions().execute_with(|| {
+        let space = Spaces::space_by_id(SPACE1);
+        assert!(space.posts_count == 1);
+        let post = Posts::post_by_id(POST1);
+        assert!(post.space_id == Some(SPACE1));
+
+        assert_ok!(_suggest_blocked_status_for_post());
+
+        let space = Spaces::space_by_id(SPACE1);
+        assert!(space.posts_count == 0);
+        let post = Posts::post_by_id(POST1);
+        assert!(post.space_id == None);
+
+    });
+}
+
 // Update entity status
 //----------------------------------------------------------------------------
 
