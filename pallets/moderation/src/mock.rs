@@ -12,7 +12,7 @@ use frame_system as system;
 use crate as moderation;
 
 use pallet_posts::PostExtension;
-use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
+use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById, SpaceUpdate};
 
 pub use pallet_utils::mock_functions::valid_content_ipfs;
 use pallet_utils::{Content, SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
@@ -244,12 +244,32 @@ impl ExtBuilder {
             create_space_and_post();
             assert_ok!(_report_default_post());
 
+            let mut test_permissions = Moderation::DefaultSpacePermissions;
+
+            test_permissions.follower = test_permissions.space_owner.clone();
+
+            assert_ok!(Spaces::update_space(
+                Origin::signed(ACCOUNT_SCOPE_OWNER),
+                SPACE1,
+                SpaceUpdate {
+                    parent_id: None,
+                    handle: None,
+                    content: None,
+                    hidden: None,
+                    permissions: Some(Some(test_permissions))
+                }
+            ));
+
             let space = Spaces::space_by_id(SPACE1).unwrap();
+            println!("{:?}", space.permissions);
+
             let accs = accounts_space_moderators();
             for acc in accs.into_iter() {
+                println!("{:?}", acc.clone());
                 let origin = Origin::signed(acc);
-
+                println!("{:?}", space.followers_count);
                 assert_ok!(SpaceFollows::follow_space(origin.clone(), space.id));
+                println!("{:?}", Spaces::space_by_id(SPACE1).unwrap().followers_count);
                 assert_ok!(_suggest_entity_status(Some(origin), None, None, None, None));
             }
         });
