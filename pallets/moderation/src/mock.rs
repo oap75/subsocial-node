@@ -12,10 +12,14 @@ use frame_system as system;
 use crate as moderation;
 
 use pallet_posts::PostExtension;
-use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById, SpaceUpdate};
+use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
+use pallet_permissions::{
+    SpacePermission,
+    SpacePermission as SP,
+};
 
 pub use pallet_utils::mock_functions::valid_content_ipfs;
-use pallet_utils::{Content, SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
+use pallet_utils::{Content, User, SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -244,32 +248,24 @@ impl ExtBuilder {
             create_space_and_post();
             assert_ok!(_report_default_post());
 
-            let mut test_permissions = Moderation::DefaultSpacePermissions;
-
-            test_permissions.follower = test_permissions.space_owner.clone();
-
-            assert_ok!(Spaces::update_space(
+            assert_ok!(Roles::create_role(
                 Origin::signed(ACCOUNT_SCOPE_OWNER),
                 SPACE1,
-                SpaceUpdate {
-                    parent_id: None,
-                    handle: None,
-                    content: None,
-                    hidden: None,
-                    permissions: Some(Some(test_permissions))
-                }
+                None,
+                default_role_content_ipfs(),
+                permission_set_default(),
             ));
 
-            let space = Spaces::space_by_id(SPACE1).unwrap();
-            println!("{:?}", space.permissions);
-
             let accs = accounts_space_moderators();
+            let users_to_grant = accs.clone().into_iter().map(|x| User::Account(x)).collect();
+            assert_ok!(Roles::grant_role(
+                Origin::signed(ACCOUNT_SCOPE_OWNER),
+                SUGGEST_ROLE,
+                users_to_grant
+            ));
+
             for acc in accs.into_iter() {
-                println!("{:?}", acc.clone());
                 let origin = Origin::signed(acc);
-                println!("{:?}", space.followers_count);
-                assert_ok!(SpaceFollows::follow_space(origin.clone(), space.id));
-                println!("{:?}", Spaces::space_by_id(SPACE1).unwrap().followers_count);
                 assert_ok!(_suggest_entity_status(Some(origin), None, None, None, None));
             }
         });
@@ -277,6 +273,7 @@ impl ExtBuilder {
         ext
     }
 }
+type RoleId = u64;
 
 pub(crate) const ACCOUNT_SCOPE_OWNER: AccountId = 1;
 pub(crate) const ACCOUNT_NOT_MODERATOR: AccountId = 2;
@@ -288,6 +285,8 @@ pub(crate) const POST1: PostId = 1;
 
 pub(crate) const REPORT1: ReportId = 1;
 pub(crate) const REPORT2: ReportId = 2;
+
+pub(crate) const SUGGEST_ROLE: RoleId = 1;
 
 pub(crate) const AUTOBLOCK_THRESHOLD: u16 = 5;
 
@@ -304,7 +303,16 @@ pub(crate) const fn empty_moderation_settings_update() -> SpaceModerationSetting
 }
 
 pub(crate) fn accounts_space_moderators() -> Vec<AccountId> {
-    (3..23).collect()
+    (3..22).collect()
+}
+
+/// Permissions Set that includes next permission: SuggestEntityStatus
+pub(crate) fn permission_set_default() -> Vec<SpacePermission> {
+    vec![SP::SuggestEntityStatus]
+}
+
+pub(crate) fn default_role_content_ipfs() -> Content {
+    Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec())
 }
 
 pub(crate) fn create_space_and_post() {
