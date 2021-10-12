@@ -239,7 +239,11 @@ mod tests {
         type Event = Event;
     }
 
-    const HANDLE_DEPOSIT: u64 = 0;
+    const HANDLE_DEPOSIT: u64 = 15;
+
+    parameter_types! {
+        pub const HandleDeposit: u64 = HANDLE_DEPOSIT;
+    }
 
     impl pallet_spaces::Config for TestRuntime {
         type Event = Event;
@@ -250,7 +254,7 @@ mod tests {
         type AfterSpaceUpdated = SpaceHistory;
         type IsAccountBlocked = Moderation;
         type IsContentBlocked = Moderation;
-        type HandleDeposit = ();
+        type HandleDeposit = HandleDeposit;
     }
 
     parameter_types! {}
@@ -301,6 +305,10 @@ mod tests {
 
         fn add_default_space() {
             assert_ok!(_create_default_space());
+        }
+
+        fn add_space_with_custom_permissions(permissions: SpacePermissions) {
+            assert_ok!(_create_space(None, None, None, Some(Some(permissions))));
         }
 
         fn add_space_with_no_handle() {
@@ -396,6 +404,13 @@ mod tests {
 
             ext
         }
+
+        /// Custom ext configuration with a space and override the space permissions
+        pub fn build_with_space_and_custom_permissions(permissions: SpacePermissions) -> TestExternalities {
+            let mut ext = Self::build();
+            ext.execute_with(|| Self::add_space_with_custom_permissions(permissions));
+            ext
+        }
     }
 
     /* Integration tests mocks */
@@ -434,6 +449,24 @@ mod tests {
 
     fn updated_space_content() -> Content {
         Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW2CuDgwxkD4".to_vec())
+    }
+
+    fn permissions_where_everyone_can_create_post() -> SpacePermissions {
+        let mut default_permissions = DefaultSpacePermissions::get();
+        default_permissions.everyone = default_permissions.everyone
+          .map(|mut permissions| {
+              permissions.insert(SP::CreatePosts);
+              permissions
+          });
+
+        default_permissions
+    }
+
+    fn permissions_where_follower_can_create_post() -> SpacePermissions {
+        let mut default_permissions = DefaultSpacePermissions::get();
+        default_permissions.follower = Some(vec![SP::CreatePosts].into_iter().collect());
+
+        default_permissions
     }
 
     fn update_for_space_handle(
@@ -607,6 +640,7 @@ mod tests {
         )
     }
 
+    /// Account 2 follows Space 1
     fn _default_follow_space() -> DispatchResult {
         _follow_space(None, None)
     }
@@ -1254,6 +1288,42 @@ mod tests {
             // Check that the handle deposit has been reserved:
             let reserved_balance = Balances::reserved_balance(ACCOUNT1);
             assert_eq!(reserved_balance, HANDLE_DEPOSIT);
+        });
+    }
+
+    #[test]
+    fn create_space_should_work_with_permissions_override() {
+        let perms = permissions_where_everyone_can_create_post();
+        ExtBuilder::build_with_space_and_custom_permissions(perms.clone()).execute_with(|| {
+            let space = Spaces::space_by_id(SPACE1).unwrap();
+            assert_eq!(space.permissions, Some(perms));
+        });
+    }
+
+    #[test]
+    fn create_post_should_work_overridden_space_permission_for_everyone() {
+        ExtBuilder::build_with_space_and_custom_permissions(permissions_where_everyone_can_create_post()).execute_with(|| {
+            assert_ok!(_create_post(
+                Some(Origin::signed(ACCOUNT2)),
+                None,
+                None,
+                None
+            ));
+        });
+    }
+
+    #[test]
+    fn create_post_should_work_overridden_space_permission_for_followers() {
+        ExtBuilder::build_with_space_and_custom_permissions(permissions_where_follower_can_create_post()).execute_with(|| {
+
+            assert_ok!(_default_follow_space());
+
+            assert_ok!(_create_post(
+                Some(Origin::signed(ACCOUNT2)),
+                None,
+                None,
+                None
+            ));
         });
     }
 
@@ -3680,15 +3750,22 @@ mod tests {
     #[test]
     fn accept_pending_ownership_should_work() {
         ExtBuilder::build_with_space().execute_with(|| {
+            // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2:
             assert_ok!(_transfer_default_space_ownership());
-            // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2
-            assert_ok!(_accept_default_pending_ownership()); // Accepting a transfer from ACCOUNT2
-            // Check whether owner was changed
+
+            // Account 2 accepts the transfer of ownership:
+            assert_ok!(_accept_default_pending_ownership());
+
+            // Check that Account 2 is a new space owner:
             let space = Spaces::space_by_id(SPACE1).unwrap();
             assert_eq!(space.owner, ACCOUNT2);
 
-            // Check whether storage state is correct
+            // Check that pending storage is cleared:
             assert!(SpaceOwnership::pending_space_owner(SPACE1).is_none());
+
+            assert!(Balances::reserved_balance(ACCOUNT1).is_zero());
+
+            assert_eq!(Balances::reserved_balance(ACCOUNT2), HANDLE_DEPOSIT);
         });
     }
 
