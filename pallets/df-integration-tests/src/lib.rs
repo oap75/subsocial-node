@@ -12,7 +12,7 @@ mod tests {
     use frame_support::{
         assert_ok, assert_noop,
         parameter_types,
-        dispatch::DispatchResult,
+        dispatch::{DispatchResult, DispatchError},
         storage::StorageMap,
     };
     use frame_system as system;
@@ -27,7 +27,7 @@ mod tests {
     use pallet_profile_follows::Error as ProfileFollowsError;
     use pallet_reactions::{ReactionId, ReactionKind, PostReactionScores, Error as ReactionsError};
     use pallet_scores::ScoringAction;
-    use pallet_spaces::{SpaceById, SpaceUpdate, Error as SpacesError};
+    use pallet_spaces::{SpaceById, SpaceUpdate, Error as SpacesError, SpacesSettings};
     use pallet_space_follows::Error as SpaceFollowsError;
     use pallet_space_ownership::Error as SpaceOwnershipError;
     use pallet_moderation::{EntityId, EntityStatus, ReportId};
@@ -489,6 +489,14 @@ mod tests {
         }
     }
 
+    fn space_settings_with_handles_disabled() -> SpacesSettings {
+        SpacesSettings { handles_enabled: false }
+    }
+
+    fn space_settings_with_handles_enabled() -> SpacesSettings {
+        SpacesSettings { handles_enabled: true }
+    }
+
     fn post_content_ipfs() -> Content {
         Content::IPFS(b"bafyreidzue2dtxpj6n4x5mktrt7las5wz5diqma47zr25uau743dhe76we".to_vec())
     }
@@ -621,10 +629,10 @@ mod tests {
     ) -> DispatchResult {
         Spaces::create_space(
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
-            parent_id_opt.unwrap_or(None),
+            parent_id_opt.unwrap_or_default(),
             handle.unwrap_or_else(|| Some(space_handle())),
             content.unwrap_or_else(space_content_ipfs),
-            permissions.unwrap_or(None)
+            permissions.unwrap_or_default()
         )
     }
 
@@ -637,6 +645,22 @@ mod tests {
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT1)),
             space_id.unwrap_or(SPACE1),
             update.unwrap_or_else(|| space_update(None, None, None)),
+        )
+    }
+
+    fn _update_space_settings_with_handles_enabled() -> DispatchResult {
+        _update_space_settings(None, Some(space_settings_with_handles_enabled()))
+    }
+
+    fn _update_space_settings_with_handles_disabled() -> DispatchResult {
+        _update_space_settings(None, Some(space_settings_with_handles_disabled()))
+    }
+
+    /// Default origin is a root.
+    fn _update_space_settings(origin: Option<Origin>, new_settings: Option<SpacesSettings>) -> DispatchResult {
+        Spaces::update_settings(
+            origin.unwrap_or_else(Origin::root),
+            new_settings.unwrap_or_else(space_settings_with_handles_disabled)
         )
     }
 
@@ -728,7 +752,7 @@ mod tests {
             origin,
             Some(None),
             Some(extension_comment(
-                parent_id.unwrap_or(None),
+                parent_id.unwrap_or_default(),
                 post_id.unwrap_or(POST1),
             )),
             Some(content.unwrap_or_else(comment_content_ipfs)),
@@ -1257,7 +1281,7 @@ mod tests {
     */
 
     /*---------------------------------------------------------------------------------------------------*/
-    // Space tests
+    // Spaces tests
 
     #[test]
     fn create_space_should_work() {
@@ -1434,6 +1458,18 @@ mod tests {
                 None,
                 None
             ), UtilsError::<TestRuntime>::HandleContainsInvalidChars);
+        });
+    }
+
+    #[test]
+    fn create_space_should_fail_when_handles_are_disabled() {
+        ExtBuilder::build().execute_with(|| {
+            assert_ok!(_update_space_settings_with_handles_disabled());
+
+            assert_noop!(
+                _create_default_space(),
+                SpacesError::<TestRuntime>::HandlesAreDisabled
+            );
         });
     }
 
@@ -1690,6 +1726,19 @@ mod tests {
     }
 
     #[test]
+    fn update_space_should_fail_when_handles_are_disabled() {
+        ExtBuilder::build_with_space().execute_with(|| {
+            assert_ok!(_update_space_settings_with_handles_disabled());
+            let space_update = update_for_space_handle(Some(space_handle_2()));
+
+            assert_noop!(
+                _update_space(None, None, Some(space_update)),
+                SpacesError::<TestRuntime>::HandlesAreDisabled
+            );
+        });
+    }
+
+    #[test]
     fn update_space_should_fail_when_ipfs_cid_is_invalid() {
         ExtBuilder::build_with_space().execute_with(|| {
 
@@ -1724,6 +1773,37 @@ mod tests {
                 Some(SPACE1),
                 Some(space_update)
             ), SpacesError::<TestRuntime>::NoPermissionToUpdateSpace);
+        });
+    }
+
+    #[test]
+    fn update_space_settings_should_work() {
+        ExtBuilder::build().execute_with(|| {
+            assert_ok!(_update_space_settings_with_handles_disabled());
+
+            let spaces_settings = Spaces::settings();
+            // Ensure that `handles_enabled` field is false
+            assert!(!spaces_settings.handles_enabled);
+        });
+    }
+
+    #[test]
+    fn update_space_settings_should_fail_when_account_is_not_root() {
+        ExtBuilder::build().execute_with(|| {
+            assert_noop!(
+                _update_space_settings(Some(Origin::signed(ACCOUNT1)), None),
+                DispatchError::BadOrigin
+            );
+        });
+    }
+
+    #[test]
+    fn update_space_settings_should_fail_when_same_settings_provided() {
+        ExtBuilder::build().execute_with(|| {
+            assert_noop!(
+                _update_space_settings_with_handles_enabled(),
+                SpacesError::<TestRuntime>::NoUpdatesForSpacesSettings
+            );
         });
     }
 
