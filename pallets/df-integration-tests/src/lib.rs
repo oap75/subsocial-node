@@ -400,8 +400,8 @@ mod tests {
             ext
         }
 
-        /// Custom ext configuration with space that has overridden permission 'CreatePost' to 'everyone'
-        pub fn build_with_space_can_post_permission(permissions: SpacePermissions) -> TestExternalities {
+        /// Custom ext configuration with a space and override the space permissions
+        pub fn build_with_space_and_custom_permissions(permissions: SpacePermissions) -> TestExternalities {
             let mut ext = Self::build();
             ext.execute_with(|| Self::add_space_with_custom_permissions(permissions));
             ext
@@ -446,7 +446,7 @@ mod tests {
         Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW2CuDgwxkD4".to_vec())
     }
 
-    fn everyone_can_create_post_permissions() -> SpacePermissions {
+    fn permissions_where_everyone_can_create_post() -> SpacePermissions {
         let mut default_permissions = DefaultSpacePermissions::get();
         default_permissions.everyone = default_permissions.everyone
           .map(|mut permissions| {
@@ -457,29 +457,9 @@ mod tests {
         default_permissions
     }
 
-    fn follower_space_permission_set() -> SpacePermissions {
-        SpacePermissions {
-            none: None,
-            follower: Some(vec![SP::CreatePosts].into_iter().collect()),
-            space_owner: None,
-            everyone: None
-        }
-    }
-
-    fn follower_can_create_post_permissions() -> SpacePermissions {
+    fn permissions_where_follower_can_create_post() -> SpacePermissions {
         let mut default_permissions = DefaultSpacePermissions::get();
-        default_permissions.follower = self::follower_space_permission_set().follower;
-
-        default_permissions
-    }
-
-    fn space_owner_can_create_post_permissions() -> SpacePermissions {
-        let mut default_permissions = DefaultSpacePermissions::get();
-        default_permissions.space_owner = default_permissions.space_owner
-          .map(|mut permissions| {
-              permissions.insert(SP::CreatePosts);
-              permissions
-          });
+        default_permissions.follower = Some(vec![SP::CreatePosts].into_iter().collect());
 
         default_permissions
     }
@@ -655,6 +635,7 @@ mod tests {
         )
     }
 
+    /// Account 2 follows Space 1
     fn _default_follow_space() -> DispatchResult {
         _follow_space(None, None)
     }
@@ -1306,16 +1287,17 @@ mod tests {
     }
 
     #[test]
-    fn create_space_should_work_with_everyone_can_post_permission() {
-        ExtBuilder::build_with_space_can_post_permission(everyone_can_create_post_permissions()).execute_with(|| {
+    fn create_space_should_work_with_permissions_override() {
+        let perms = permissions_where_everyone_can_create_post();
+        ExtBuilder::build_with_space_and_custom_permissions(perms.clone()).execute_with(|| {
             let space = Spaces::space_by_id(SPACE1).unwrap();
-            assert_eq!(space.permissions, Some(everyone_can_create_post_permissions()));
+            assert_eq!(space.permissions, Some(perms));
         });
     }
 
     #[test]
     fn create_post_should_work_overridden_space_permission_for_everyone() {
-        ExtBuilder::build_with_space_can_post_permission(everyone_can_create_post_permissions()).execute_with(|| {
+        ExtBuilder::build_with_space_and_custom_permissions(permissions_where_everyone_can_create_post()).execute_with(|| {
             assert_ok!(_create_post(
                 Some(Origin::signed(ACCOUNT2)),
                 None,
@@ -1326,16 +1308,8 @@ mod tests {
     }
 
     #[test]
-    fn create_space_should_work_with_followers_can_post_permission() {
-        ExtBuilder::build_with_space_can_post_permission(follower_can_create_post_permissions()).execute_with(|| {
-            let space = Spaces::space_by_id(SPACE1).unwrap();
-            assert_eq!(space.permissions, Some(follower_can_create_post_permissions()));
-        });
-    }
-
-    #[test]
     fn create_post_should_work_overridden_space_permission_for_followers() {
-        ExtBuilder::build_with_space_can_post_permission(follower_can_create_post_permissions()).execute_with(|| {
+        ExtBuilder::build_with_space_and_custom_permissions(permissions_where_follower_can_create_post()).execute_with(|| {
 
             assert_ok!(_default_follow_space());
 
@@ -1345,21 +1319,6 @@ mod tests {
                 None,
                 None
             ));
-        });
-    }
-
-    #[test]
-    fn create_space_should_work_with_space_owner_can_post_permission() {
-        ExtBuilder::build_with_space_can_post_permission(space_owner_can_create_post_permissions()).execute_with(|| {
-            let space = Spaces::space_by_id(SPACE1).unwrap();
-            assert_eq!(space.permissions, Some(space_owner_can_create_post_permissions()));
-        });
-    }
-
-    #[test]
-    fn create_post_should_work_overridden_space_permission_for_space_owner() {
-        ExtBuilder::build_with_space_can_post_permission(space_owner_can_create_post_permissions()).execute_with(|| {
-            assert_ok!(_create_default_post());
         });
     }
 
