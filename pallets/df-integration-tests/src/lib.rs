@@ -221,7 +221,11 @@ mod tests {
         type Event = ();
     }
 
-    const HANDLE_DEPOSIT: u64 = 0;
+    const HANDLE_DEPOSIT: u64 = 15;
+
+    parameter_types! {
+        pub const HandleDeposit: u64 = HANDLE_DEPOSIT;
+    }
 
     impl pallet_spaces::Trait for TestRuntime {
         type Event = ();
@@ -232,7 +236,7 @@ mod tests {
         type AfterSpaceUpdated = SpaceHistory;
         type IsAccountBlocked = Moderation;
         type IsContentBlocked = Moderation;
-        type HandleDeposit = ();
+        type HandleDeposit = HandleDeposit;
     }
 
     parameter_types! {}
@@ -3745,21 +3749,22 @@ mod tests {
     #[test]
     fn accept_pending_ownership_should_work() {
         ExtBuilder::build_with_space().execute_with(|| {
+            // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2:
             assert_ok!(_transfer_default_space_ownership());
-            // Transfer SpaceId 1 owned by ACCOUNT1 to ACCOUNT2
-            assert_ok!(_accept_default_pending_ownership()); // Accepting a transfer from ACCOUNT2
-            // Check whether owner was changed
+
+            // Account 2 accepts the transfer of ownership:
+            assert_ok!(_accept_default_pending_ownership());
+
+            // Check that Account 2 is a new space owner:
             let space = Spaces::space_by_id(SPACE1).unwrap();
             assert_eq!(space.owner, ACCOUNT2);
 
-            // Check whether storage state is correct
+            // Check that pending storage is cleared:
             assert!(SpaceOwnership::pending_space_owner(SPACE1).is_none());
 
-            let owner_reserved_balance = Balances::reserved_balance(ACCOUNT1);
-            assert!(owner_reserved_balance.is_zero());
+            assert!(Balances::reserved_balance(ACCOUNT1).is_zero());
 
-            let recipient_reserved_balance = Balances::reserved_balance(ACCOUNT2);
-            assert_eq!(recipient_reserved_balance, HANDLE_DEPOSIT);
+            assert_eq!(Balances::reserved_balance(ACCOUNT2), HANDLE_DEPOSIT);
         });
     }
 
