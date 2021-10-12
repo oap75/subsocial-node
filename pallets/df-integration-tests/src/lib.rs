@@ -456,11 +456,11 @@ mod tests {
         }
     }
 
-    fn space_settings_disable_handles() -> SpacesSettings {
+    fn space_settings_with_handles_disabled() -> SpacesSettings {
         SpacesSettings { handles_enabled: false }
     }
 
-    fn space_settings_enable_handles() -> SpacesSettings {
+    fn space_settings_with_handles_enabled() -> SpacesSettings {
         SpacesSettings { handles_enabled: true }
     }
 
@@ -615,18 +615,19 @@ mod tests {
         )
     }
 
-    fn _update_space_settings_enable_handles() -> DispatchResult {
-        _update_space_settings(None, Some(space_settings_enable_handles()))
+    fn _update_space_settings_with_handles_enabled() -> DispatchResult {
+        _update_space_settings(None, Some(space_settings_with_handles_enabled()))
     }
 
-    fn _update_space_settings_disable_handles() -> DispatchResult {
-        _update_space_settings(None, None)
+    fn _update_space_settings_with_handles_disabled() -> DispatchResult {
+        _update_space_settings(None, Some(space_settings_with_handles_disabled()))
     }
 
+    /// Default origin is a root.
     fn _update_space_settings(origin: Option<Origin>, new_settings: Option<SpacesSettings>) -> DispatchResult {
         Spaces::update_settings(
             origin.unwrap_or_else(Origin::root),
-            new_settings.unwrap_or_else(space_settings_disable_handles)
+            new_settings.unwrap_or_else(space_settings_with_handles_disabled)
         )
     }
 
@@ -1393,7 +1394,7 @@ mod tests {
     #[test]
     fn create_space_should_fail_when_handles_are_disabled() {
         ExtBuilder::build().execute_with(|| {
-            assert_ok!(_update_space_settings_disable_handles());
+            assert_ok!(_update_space_settings_with_handles_disabled());
 
             assert_noop!(
                 _create_default_space(),
@@ -1657,7 +1658,7 @@ mod tests {
     #[test]
     fn update_space_should_fail_when_handles_are_disabled() {
         ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_update_space_settings_disable_handles());
+            assert_ok!(_update_space_settings_with_handles_disabled());
             let space_update = update_for_space_handle(Some(space_handle_2()));
 
             assert_noop!(
@@ -1708,7 +1709,7 @@ mod tests {
     #[test]
     fn update_space_settings_should_work() {
         ExtBuilder::build().execute_with(|| {
-            assert_ok!(_update_space_settings_disable_handles());
+            assert_ok!(_update_space_settings_with_handles_disabled());
 
             let spaces_settings = Spaces::settings();
             // Ensure that `handles_enabled` field is false
@@ -1730,8 +1731,8 @@ mod tests {
     fn update_space_settings_should_fail_when_same_settings_provided() {
         ExtBuilder::build().execute_with(|| {
             assert_noop!(
-                _update_space_settings_enable_handles(),
-                SpacesError::<TestRuntime>::NoSettingsUpdate
+                _update_space_settings_with_handles_enabled(),
+                SpacesError::<TestRuntime>::NoUpdatesForSpacesSettings
             );
         });
     }

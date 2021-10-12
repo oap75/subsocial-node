@@ -152,8 +152,8 @@ decl_error! {
     NoPermissionToCreateSubspaces,
     /// Space is at root level, no `parent_id` specified.
     SpaceIsAtRoot,
-    /// New space settings don't differ from the old ones.
-    NoSettingsUpdate,
+    /// New spaces' settings don't differ from the old ones.
+    NoUpdatesForSpacesSettings,
   }
 }
 
@@ -227,6 +227,7 @@ decl_module! {
       let owner = ensure_signed(origin)?;
 
       Utils::<T>::is_valid_content(content.clone())?;
+
       if handle_opt.is_some() {
         Self::ensure_handles_enabled()?;
       }
@@ -376,7 +377,7 @@ decl_module! {
       ensure_root(origin)?;
 
       let space_settings = Self::settings();
-      ensure!(space_settings != new_settings, Error::<T>::NoSettingsUpdate);
+      ensure!(space_settings != new_settings, Error::<T>::NoUpdatesForSpacesSettings);
 
       PalletSettings::mutate(|settings| *settings = new_settings);
 
