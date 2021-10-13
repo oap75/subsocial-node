@@ -154,22 +154,30 @@ fn suggest_entity_status_should_fail_when_origin_has_no_permission() {
 }
 
 #[test]
-fn suggest_entity_status_should_ban_after_threshold() {
-    ExtBuilder::build_with_space_and_post_then_report_then_20_suggestions().execute_with(|| {
-        let space_before_block = Spaces::<Test>::space_by_id(SPACE1).unwrap();
-        assert!(space_before_block.posts_count == 1);
+fn suggest_entity_status_should_block_entity_when_threshold_reached() {
+    ExtBuilder::build_with_report_then_grant_role_to_suggest_entity_status().execute_with(|| {
+        let space_before_autoblock = Spaces::<Test>::space_by_id(SPACE1).unwrap();
+        let post_before_autoblock = Posts::post_by_id(POST1).unwrap();
 
-        let post_before_block = Posts::post_by_id(POST1).unwrap();
-        assert!(post_before_block.space_id == Some(SPACE1));
+        assert!(space_before_autoblock.posts_count == 1);
+        assert!(post_before_autoblock.space_id == Some(SPACE1));
+        assert_eq!(Posts::post_ids_by_space_id(SPACE1), vec![POST1]);
 
+        // Scope owner suggests entity status 'Blocked'
         assert_ok!(_suggest_blocked_status_for_post());
 
-        let space_after_block = Spaces::<Test>::space_by_id(SPACE1).unwrap();
-        assert!(space_after_block.posts_count == 0);
+        // All accounts that have the corresponding role suggest entity status 'Blocked'.
+        let accs = accounts_space_moderators();
+        for acc in accs.into_iter() {
+            assert_ok!(_suggest_entity_status(Some(Origin::signed(acc)), None, None, None, None));
+        }
 
-        let post_after_block = Posts::post_by_id(POST1).unwrap();
-        assert!(post_after_block.space_id == None);
+        let space_after_autoblock = Spaces::<Test>::space_by_id(SPACE1).unwrap();
+        let post_after_autoblock = Posts::post_by_id(POST1).unwrap();
 
+        assert!(space_after_autoblock.posts_count == 0);
+        assert!(post_after_autoblock.space_id.is_none());
+        assert!(Posts::post_ids_by_space_id(SPACE1).is_empty());
     });
 }
 

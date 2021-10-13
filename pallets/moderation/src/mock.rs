@@ -237,18 +237,10 @@ impl ExtBuilder {
         ext
     }
 
-    pub fn build_with_space_and_post_then_report_then_20_suggestions() -> TestExternalities {
-        let storage = system::GenesisConfig::default()
-            .build_storage::<Test>()
-            .unwrap();
+    pub fn build_with_report_then_grant_role_to_suggest_entity_status() -> TestExternalities {
+        let mut ext = Self::build_with_space_and_post_then_report();
 
-        let mut ext = TestExternalities::from(storage);
         ext.execute_with(|| {
-            System::set_block_number(1);
-
-            create_space_and_post();
-            assert_ok!(_report_default_post());
-
             assert_ok!(Roles::create_role(
                 Origin::signed(ACCOUNT_SCOPE_OWNER),
                 SPACE1,
@@ -258,17 +250,12 @@ impl ExtBuilder {
             ));
 
             let accs = accounts_space_moderators();
-            let users_to_grant = accs.clone().into_iter().map(|x| User::Account(x)).collect();
+            let users_to_grant = accs.into_iter().map(User::Account).collect();
             assert_ok!(Roles::grant_role(
                 Origin::signed(ACCOUNT_SCOPE_OWNER),
-                SUGGEST_ROLE,
+                SUGGEST_ENTITY_STATUS_ROLE,
                 users_to_grant
             ));
-
-            for acc in accs.into_iter() {
-                let origin = Origin::signed(acc);
-                assert_ok!(_suggest_entity_status(Some(origin), None, None, None, None));
-            }
         });
 
         ext
@@ -286,7 +273,7 @@ pub(crate) const POST1: PostId = 1;
 pub(crate) const REPORT1: ReportId = 1;
 pub(crate) const REPORT2: ReportId = 2;
 
-pub(crate) const SUGGEST_ROLE: RoleId = 1;
+pub(crate) const SUGGEST_ENTITY_STATUS_ROLE: RoleId = 1;
 
 pub(crate) const AUTOBLOCK_THRESHOLD: u16 = 5;
 
@@ -354,6 +341,7 @@ pub(crate) fn _suggest_blocked_status_for_post() -> DispatchResult {
     _suggest_entity_status(None, None, None, None, None)
 }
 
+/// By default (when all options are `None`) suggests blocked status for Post1 from Account1
 pub(crate) fn _suggest_entity_status(
     origin: Option<Origin>,
     entity: Option<EntityId<AccountId>>,
