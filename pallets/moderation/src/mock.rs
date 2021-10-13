@@ -1,25 +1,28 @@
 use super::*;
 
-use sp_core::H256;
-use sp_io::TestExternalities;
-
-use sp_runtime::{
-    traits::{BlakeTwo256, IdentityLookup}, testing::Header,
-};
-use frame_support::{parameter_types, assert_ok, StorageMap, dispatch::DispatchResult};
-use frame_system as system;
-
 use crate as moderation;
 
-use pallet_posts::PostExtension;
-use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
+use frame_support::{assert_ok, dispatch::DispatchResult, parameter_types, StorageMap};
+use frame_system as system;
+
+use sp_core::H256;
+use sp_io::TestExternalities;
+use sp_runtime::{
+    testing::Header,
+    traits::{BlakeTwo256, IdentityLookup},
+};
+
 use pallet_permissions::{
     SpacePermission,
     SpacePermission as SP,
+    default_permissions::DefaultSpacePermissions,
 };
+use pallet_posts::PostExtension;
+use pallet_roles::RoleId;
+use pallet_spaces::{RESERVED_SPACE_COUNT, SpaceById};
 
+use pallet_utils::{Content, DEFAULT_MAX_HANDLE_LEN, DEFAULT_MIN_HANDLE_LEN, PostId, SpaceId, User};
 pub use pallet_utils::mock_functions::valid_content_ipfs;
-use pallet_utils::{Content, User, SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -108,8 +111,6 @@ impl pallet_balances::Config for Test {
     type WeightInfo = ();
     type MaxLocks = ();
 }
-
-use pallet_permissions::default_permissions::DefaultSpacePermissions;
 
 impl pallet_permissions::Config for Test {
     type DefaultSpacePermissions = DefaultSpacePermissions;
@@ -273,7 +274,6 @@ impl ExtBuilder {
         ext
     }
 }
-type RoleId = u64;
 
 pub(crate) const ACCOUNT_SCOPE_OWNER: AccountId = 1;
 pub(crate) const ACCOUNT_NOT_MODERATOR: AccountId = 2;
