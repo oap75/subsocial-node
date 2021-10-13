@@ -253,7 +253,7 @@ impl ExtBuilder {
             let users_to_grant = accs.into_iter().map(User::Account).collect();
             assert_ok!(Roles::grant_role(
                 Origin::signed(ACCOUNT_SCOPE_OWNER),
-                SUGGEST_ENTITY_STATUS_ROLE,
+                ROLE_WITH_SUGGEST_ENTITY_STATUS_ALLOWED,
                 users_to_grant
             ));
         });
@@ -273,7 +273,7 @@ pub(crate) const POST1: PostId = 1;
 pub(crate) const REPORT1: ReportId = 1;
 pub(crate) const REPORT2: ReportId = 2;
 
-pub(crate) const SUGGEST_ENTITY_STATUS_ROLE: RoleId = 1;
+pub(crate) const ROLE_WITH_SUGGEST_ENTITY_STATUS_ALLOWED: RoleId = 1;
 
 pub(crate) const AUTOBLOCK_THRESHOLD: u16 = 5;
 
@@ -298,6 +298,7 @@ pub(crate) fn permission_set_default() -> Vec<SpacePermission> {
     vec![SP::SuggestEntityStatus]
 }
 
+// TODO: replace with common function when benchmarks PR is merged
 pub(crate) fn default_role_content_ipfs() -> Content {
     Content::IPFS(b"QmRAQB6YaCyidP37UdDnjFY5vQuiBrcqdyoW1CuDgwxkD4".to_vec())
 }
@@ -341,7 +342,7 @@ pub(crate) fn _suggest_blocked_status_for_post() -> DispatchResult {
     _suggest_entity_status(None, None, None, None, None)
 }
 
-/// By default (when all options are `None`) suggests blocked status for Post1 from Account1
+/// By default (when all options are `None`) makes ACCOUNT1 to suggest 'Blocked' status to the POST1
 pub(crate) fn _suggest_entity_status(
     origin: Option<Origin>,
     entity: Option<EntityId<AccountId>>,
