@@ -13,7 +13,6 @@ use sp_runtime::{
 };
 
 use pallet_permissions::{
-    SpacePermission,
     SpacePermission as SP,
     default_permissions::DefaultSpacePermissions,
 };
@@ -165,7 +164,7 @@ impl pallet_profiles::Config for Test {
 }
 
 parameter_types! {
-    pub const DefaultAutoblockThreshold: u16 = 20;
+    pub const DefaultAutoblockThreshold: u16 = 3;
 }
 
 impl Config for Test {
@@ -241,20 +240,21 @@ impl ExtBuilder {
         let mut ext = Self::build_with_space_and_post_then_report();
 
         ext.execute_with(|| {
+            // Create a new role for moderators:
             assert_ok!(Roles::create_role(
                 Origin::signed(ACCOUNT_SCOPE_OWNER),
                 SPACE1,
                 None,
                 default_role_content_ipfs(),
-                permission_set_default(),
+                vec![SP::SuggestEntityStatus],
             ));
 
-            let accs = accounts_space_moderators();
-            let users_to_grant = accs.into_iter().map(User::Account).collect();
+            // Allow the moderator accounts to suggest entity statuses:
+            let mods = moderators().into_iter().map(User::Account).collect();
             assert_ok!(Roles::grant_role(
                 Origin::signed(ACCOUNT_SCOPE_OWNER),
-                ROLE_WITH_SUGGEST_ENTITY_STATUS_ALLOWED,
-                users_to_grant
+                MODERATOR_ROLE_ID,
+                mods
             ));
         });
 
@@ -264,6 +264,7 @@ impl ExtBuilder {
 
 pub(crate) const ACCOUNT_SCOPE_OWNER: AccountId = 1;
 pub(crate) const ACCOUNT_NOT_MODERATOR: AccountId = 2;
+pub(crate) const FIRST_MODERATOR_ID: AccountId = 100;
 
 pub(crate) const SPACE1: SpaceId = RESERVED_SPACE_COUNT + 1;
 pub(crate) const SPACE2: SpaceId = SPACE1 + 1;
@@ -273,7 +274,7 @@ pub(crate) const POST1: PostId = 1;
 pub(crate) const REPORT1: ReportId = 1;
 pub(crate) const REPORT2: ReportId = 2;
 
-pub(crate) const ROLE_WITH_SUGGEST_ENTITY_STATUS_ALLOWED: RoleId = 1;
+pub(crate) const MODERATOR_ROLE_ID: RoleId = 1;
 
 pub(crate) const AUTOBLOCK_THRESHOLD: u16 = 5;
 
@@ -289,13 +290,10 @@ pub(crate) const fn empty_moderation_settings_update() -> SpaceModerationSetting
     }
 }
 
-pub(crate) fn accounts_space_moderators() -> Vec<AccountId> {
-    (3..22).collect()
-}
-
-/// Permissions Set that includes next permission: SuggestEntityStatus
-pub(crate) fn permission_set_default() -> Vec<SpacePermission> {
-    vec![SP::SuggestEntityStatus]
+pub(crate) fn moderators() -> Vec<AccountId> {
+    let first_mod_id = FIRST_MODERATOR_ID;
+    let last_mod_id = first_mod_id + DefaultAutoblockThreshold::get() as u64 + 2;
+    (first_mod_id..last_mod_id).collect()
 }
 
 // TODO: replace with common function when benchmarks PR is merged
@@ -408,5 +406,3 @@ pub(crate) fn _update_moderation_settings(
         settings_update.unwrap_or_else(new_autoblock_threshold),
     )
 }
-
-

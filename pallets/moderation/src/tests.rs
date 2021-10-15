@@ -154,7 +154,7 @@ fn suggest_entity_status_should_fail_when_origin_has_no_permission() {
 }
 
 #[test]
-fn suggest_entity_status_should_block_entity_when_threshold_reached() {
+fn suggest_entity_status_should_autoblock_and_kick_entity_when_threshold_reached() {
     ExtBuilder::build_with_report_then_grant_role_to_suggest_entity_status().execute_with(|| {
         let space_before_autoblock = Spaces::<Test>::space_by_id(SPACE1).unwrap();
         let post_before_autoblock = Posts::post_by_id(POST1).unwrap();
@@ -163,13 +163,15 @@ fn suggest_entity_status_should_block_entity_when_threshold_reached() {
         assert!(post_before_autoblock.space_id == Some(SPACE1));
         assert_eq!(Posts::post_ids_by_space_id(SPACE1), vec![POST1]);
 
-        // Scope owner suggests entity status 'Blocked'
-        assert_ok!(_suggest_blocked_status_for_post());
-
         // All accounts that have the corresponding role suggest entity status 'Blocked'.
-        let accs = accounts_space_moderators();
-        for acc in accs.into_iter() {
-            assert_ok!(_suggest_entity_status(Some(Origin::signed(acc)), None, None, None, None));
+        let accs = moderators();
+        for (i, acc) in accs.into_iter().enumerate() {
+            let res = _suggest_entity_status(Some(Origin::signed(acc)), None, None, None, None);
+            if (i as u16) < DefaultAutoblockThreshold::get() {
+                assert_ok!(res);
+            } else {
+                assert_noop!(res, Error::<Test>::SuggestedSameEntityStatus);
+            }
         }
 
         let space_after_autoblock = Spaces::<Test>::space_by_id(SPACE1).unwrap();
