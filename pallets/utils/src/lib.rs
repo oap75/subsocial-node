@@ -45,8 +45,8 @@ impl<T: Config> WhoAndWhen<T> {
     pub fn new(account: T::AccountId) -> Self {
         WhoAndWhen {
             account,
-            block: <system::Module<T>>::block_number(),
-            time: <pallet_timestamp::Module<T>>::now(),
+            block: <system::Pallet<T>>::block_number(),
+            time: <pallet_timestamp::Pallet<T>>::now(),
         }
     }
 }

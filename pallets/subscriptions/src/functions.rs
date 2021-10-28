@@ -45,7 +45,7 @@ impl<T: Config> Module<T> {
     ) -> DispatchResult {
         let period_in_blocks = Self::get_period_in_blocks(period);
         let task_name = (SUBSCRIPTIONS_ID, subscription_id).encode();
-        let when = <system::Module<T>>::block_number().saturating_add(period_in_blocks);
+        let when = <system::Pallet<T>>::block_number().saturating_add(period_in_blocks);
 
         T::Scheduler::schedule_named(
             task_name,

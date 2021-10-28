@@ -171,7 +171,7 @@ decl_module! {
 
         const MaxSessionKeysPerAccount: u16 = T::MaxSessionKeysPerAccount::get();
 
-        // TODO Alex: think about this approach. I think it's not right. 
+        // TODO Alex: think about this approach. I think it's not right.
         //      What if a person will spend more than their had before the extrinsic?
         const BaseSessionKeyBond: BalanceOf<T> = T::BaseSessionKeyBond::get();
 
@@ -206,7 +206,7 @@ decl_module! {
             let details = SessionKey::<T>::new(who.clone(), time_to_live, limit);
             KeyDetails::<T>::insert(key_account.clone(), details);
 
-            let current_block = system::Module::<T>::block_number();
+            let current_block = system::Pallet::<T>::block_number();
             let expiration_block = current_block.saturating_add(time_to_live);
 
             SessionKeysByExpireBlock::<T>::mutate(
@@ -313,7 +313,7 @@ impl<T: Config> SessionKey<T> {
         SessionKey::<T> {
             created: WhoAndWhen::new(created_by),
             updated: None,
-            expires_at: time_to_live + <system::Module<T>>::block_number(),
+            expires_at: time_to_live + <system::Pallet<T>>::block_number(),
             limit,
             spent: Zero::zero(),
         }
@@ -328,7 +328,7 @@ impl<T: Config> SessionKey<T> {
     }
 
     pub fn is_expired(&self) -> bool {
-        self.expires_at <= <system::Module<T>>::block_number()
+        self.expires_at <= <system::Pallet<T>>::block_number()
     }
 }
 

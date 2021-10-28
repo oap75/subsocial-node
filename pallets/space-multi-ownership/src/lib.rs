@@ -261,7 +261,7 @@ decl_module! {
         new_threshold,
         notes,
         confirmed_by: Vec::new(),
-        expires_at: <system::Module<T>>::block_number() + T::BlocksToLive::get()
+        expires_at: <system::Pallet<T>>::block_number() + T::BlocksToLive::get()
       };
 
       if fields_updated > 0 {

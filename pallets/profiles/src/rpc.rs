@@ -5,7 +5,7 @@ use sp_std::prelude::*;
 
 use pallet_utils::rpc::{FlatContent, FlatWhoAndWhen};
 
-use frame_system::Module as SystemModule;
+use frame_system::Pallet as SystemPallet;
 
 use crate::{Module, Profile, SocialAccount, Config};
 
@@ -76,6 +76,6 @@ impl<T: Config> Module<T> {
     }
 
     pub fn get_account_data(account: T::AccountId) -> T::AccountData {
-        SystemModule::<T>::account(&account).data
+        SystemPallet::<T>::account(&account).data
     }
 }
