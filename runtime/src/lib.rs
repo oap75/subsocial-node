@@ -9,8 +9,8 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use sp_std::{
-	prelude::*,
-	collections::btree_map::BTreeMap,
+    prelude::*,
+    collections::btree_map::BTreeMap,
 };
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 pub use subsocial_primitives::{AccountId, Signature, Balance, Index};
@@ -55,9 +55,9 @@ use pallet_permissions::SpacePermission;
 use pallet_posts::rpc::{FlatPost, FlatPostKind, RepliesByPostId};
 use pallet_profiles::rpc::FlatSocialAccount;
 use pallet_reactions::{
-	ReactionId,
-	ReactionKind,
-	rpc::FlatReaction,
+    ReactionId,
+    ReactionKind,
+    rpc::FlatReaction,
 };
 use pallet_spaces::rpc::FlatSpace;
 use pallet_utils::{SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
@@ -122,7 +122,7 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
     }
 }
 
-/// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
+/// We assume that ~10% of the block weight is consumed by `on_initialize` handlers.
 /// This is used to limit the maximal weight of a single extrinsic.
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
