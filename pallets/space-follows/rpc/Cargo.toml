@@ -33,10 +33,10 @@ pallet-utils = { default-features = false, path = '../../utils' }
 space-follows-runtime-api = { default-features = false, path = 'runtime-api' }
 
 # Substrate dependencies
-sp-api = { default-features = false, version = '3.0.0' }
-sp-blockchain = { default-features = false, version = '3.0.0' }
-sp-rpc = { default-features = false, version = '3.0.0' }
-sp-runtime = { default-features = false, version = '3.0.0' }
+sp-api = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10', default-features = false }
+sp-blockchain = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10', default-features = false }
+sp-rpc = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10', default-features = false }
+sp-runtime = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10', default-features = false }
 
 [features]
 default = ['std']
