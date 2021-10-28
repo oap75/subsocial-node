@@ -168,28 +168,28 @@ fn testnet_genesis(
 	_enable_println: bool
 ) -> GenesisConfig {
 	GenesisConfig {
-        frame_system: Some(SystemConfig {
-			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
-		}),
-        pallet_balances: Some(BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|(k, b)|(k, b * DOLLARS)).collect(),
-		}),
-		pallet_aura: Some(AuraConfig {
-			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
-		}),
-        pallet_grandpa: Some(GrandpaConfig {
-			authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
-		}),
-		pallet_sudo: Some(SudoConfig {
-			key: root_key.clone(),
-		}),
-		pallet_utils: Some(UtilsConfig {
-			treasury_account: treasury_account_id,
-		}),
-		pallet_spaces: Some(SpacesConfig {
-			endowed_account: root_key,
-		}),
+        system: SystemConfig {
+            code: wasm_binary.to_vec(),
+            changes_trie_config: Default::default(),
+        },
+        balances: BalancesConfig {
+            balances: endowed_accounts.iter().cloned().map(|(k, b)| (k, b * DOLLARS)).collect(),
+        },
+		aura: AuraConfig {
+            authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
+        },
+        grandpa: GrandpaConfig {
+            authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
+        },
+		sudo: SudoConfig {
+            key: root_key.clone(),
+        },
+		utils: UtilsConfig {
+            treasury_account: treasury_account_id,
+        },
+		spaces: SpacesConfig {
+            endowed_account: root_key,
+        },
 	}
 }
 
