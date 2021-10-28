@@ -63,6 +63,7 @@ sc-rpc = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v
 sc-rpc-api = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
 sc-service = { features = ['wasmtime'], git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
 sc-transaction-pool = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
+sc-transaction-pool-api = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
 sc-telemetry = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
 
 ## Substrate Primitive Dependencies
@@ -75,6 +76,7 @@ sp-core = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-
 sp-finality-grandpa = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
 sp-inherents = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
 sp-runtime = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
+sp-timestamp = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
 sp-transaction-pool = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10' }
 
 [features]
