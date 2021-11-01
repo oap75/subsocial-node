@@ -1,7 +1,7 @@
 use crate::*;
 
 use sp_runtime::traits::Saturating;
-use pallet_sudo::Module as Sudo;
+use pallet_sudo::Pallet as Sudo;
 use frame_support::{
     dispatch::DispatchError,
     traits::schedule::DispatchTime,

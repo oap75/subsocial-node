@@ -95,6 +95,7 @@ mod tests {
         type OnKilledAccount = ();
         type SystemWeightInfo = ();
         type SS58Prefix = ();
+        type OnSetCode = ();
     }
 
     parameter_types! {
@@ -120,6 +121,8 @@ mod tests {
         type AccountStore = System;
         type WeightInfo = ();
         type MaxLocks = ();
+        type MaxReserves = ();
+        type ReserveIdentifier = ();
     }
 
     parameter_types! {

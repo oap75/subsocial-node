@@ -38,7 +38,11 @@ pub use pallet_balances::Call as BalancesCall;
 pub use sp_runtime::{Permill, Perbill};
 pub use frame_support::{
     construct_runtime, parameter_types, StorageValue,
-    traits::{KeyOwnerProofSystem, Randomness, Currency, Imbalance, OnUnbalanced, Contains},
+    traits::{
+        KeyOwnerProofSystem, Randomness, Currency,
+        Imbalance, OnUnbalanced, Contains,
+        OnRuntimeUpgrade, StorageInfo,
+    },
     weights::{
         Weight, IdentityFee, DispatchClass,
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -557,7 +561,19 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPallets,
+    MigratePalletVersionToStorageVersion,
 >;
+
+/// Migrate from `PalletVersion` to the new `StorageVersion`
+pub struct MigratePalletVersionToStorageVersion;
+
+impl OnRuntimeUpgrade for MigratePalletVersionToStorageVersion {
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+        frame_support::migrations::migrate_from_pallet_version_to_storage_version::<AllPalletsWithSystem>(
+            &RocksDbWeight::get()
+        )
+    }
+}
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -692,11 +708,11 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
-		fn benchmark_metadata(extra: bool) -> (
+		fn benchmark_metadata(_extra: bool) -> (
 			Vec<frame_benchmarking::BenchmarkList>,
 			Vec<frame_support::traits::StorageInfo>,
 		) {
-			use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
+			/*use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
 			use frame_support::traits::StorageInfoTrait;
 			use frame_system_benchmarking::Pallet as SystemBench;
 
@@ -705,11 +721,23 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+            // list_benchmark!(list, extra, pallet_permissions, Permissions);
+			// list_benchmark!(list, extra, pallet_posts, Posts);
+			// list_benchmark!(list, extra, pallet_profile_follows, DotsamaClaims);
+			// list_benchmark!(list, extra, pallet_profiles, Profiles);
+			// list_benchmark!(list, extra, pallet_reactions, Reactions);
+			// list_benchmark!(list, extra, pallet_roles, Roles);
+			// list_benchmark!(list, extra, pallet_scores, Scores);
+			// list_benchmark!(list, extra, pallet_space_follows, SpaceFollows);
+			// list_benchmark!(list, extra, pallet_space_ownership, SpaceOwnership);
+			// list_benchmark!(list, extra, pallet_spaces, Spaces);
+			// list_benchmark!(list, extra, pallet_faucets, Faucets);
 			list_benchmark!(list, extra, pallet_dotsama_claims, DotsamaClaims);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
-			return (list, storage_info)
+			return (list, storage_info)*/
+            todo!()
 		}
 
 		fn dispatch_benchmark(

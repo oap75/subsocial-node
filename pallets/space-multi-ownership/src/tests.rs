@@ -21,11 +21,11 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: system::{Module, Call, Config, Storage, Event<T>},
-        Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        MultiOwnership: multiownership::{Module, Call, Storage, Event<T>},
-        Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
+        System: system::{Pallet, Call, Config, Storage, Event<T>},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        MultiOwnership: multiownership::{Pallet, Call, Storage, Event<T>},
+        Utils: pallet_utils::{Pallet, Storage, Event<T>, Config<T>},
     }
 );
 
@@ -56,6 +56,7 @@ impl system::Config for Test {
   type OnKilledAccount = ();
   type SystemWeightInfo = ();
   type SS58Prefix = ();
+  type OnSetCode = ();
 }
 
 parameter_types! {
@@ -81,6 +82,8 @@ impl pallet_balances::Config for Test {
   type AccountStore = System;
   type WeightInfo = ();
   type MaxLocks = ();
+  type MaxReserves = ();
+  type ReserveIdentifier = ();
 }
 
 parameter_types! {
@@ -115,7 +118,7 @@ impl Config for Test {
 pub struct ExtBuilder;
 
 impl ExtBuilder {
-  
+
   /// Default ext configuration with BlockNumber 1
   pub fn build() -> TestExternalities {
     let storage = system::GenesisConfig::default()

@@ -22,9 +22,9 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: system::{Module, Call, Config, Storage, Event<T>},
-        Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Utils: utils::{Module, Storage, Event<T>, Config<T>},
+        System: system::{Pallet, Call, Config, Storage, Event<T>},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Utils: utils::{Pallet, Storage, Event<T>, Config<T>},
     }
 );
 
@@ -37,18 +37,18 @@ impl system::Config for Test {
     type BaseCallFilter = ();
     type BlockWeights = ();
     type BlockLength = ();
-    type DbWeight = ();
     type Origin = Origin;
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
-    type Call = Call;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
     type Event = Event;
     type BlockHashCount = BlockHashCount;
+    type DbWeight = ();
     type Version = ();
     type PalletInfo = PalletInfo;
     type AccountData = pallet_balances::AccountData<u64>;
@@ -56,6 +56,7 @@ impl system::Config for Test {
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
     type SS58Prefix = ();
+    type OnSetCode = ();
 }
 
 parameter_types! {
@@ -73,13 +74,15 @@ parameter_types! {
 	pub const ExistentialDeposit: u64 = 1;
 }
 impl pallet_balances::Config for Test {
-    type MaxLocks = ();
     type Balance = u64;
-    type Event = Event;
     type DustRemoval = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = ();
+    type MaxLocks = ();
+    type MaxReserves = ();
+    type ReserveIdentifier = ();
 }
 
 parameter_types! {

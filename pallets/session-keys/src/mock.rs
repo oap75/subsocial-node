@@ -156,7 +156,7 @@ impl Config for Test {
     type BaseSessionKeyBond = BaseSessionKeyBond;
 }
 
-pub(crate) type System = system::Module<Test>;
+pub(crate) type System = system::Pallet<Test>;
 pub(crate) type SessionKeys = Module<Test>;
 pub(crate) type Balances = pallet_balances::Module<Test>;
 type ProfileFollows = pallet_profile_follows::Module<Test>;
