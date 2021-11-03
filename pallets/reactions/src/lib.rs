@@ -85,9 +85,9 @@ decl_event!(
     pub enum Event<T> where
         <T as system::Config>::AccountId,
     {
-        PostReactionCreated(AccountId, PostId, ReactionId),
-        PostReactionUpdated(AccountId, PostId, ReactionId),
-        PostReactionDeleted(AccountId, PostId, ReactionId),
+        PostReactionCreated(AccountId, PostId, ReactionId, ReactionKind),
+        PostReactionUpdated(AccountId, PostId, ReactionId, ReactionKind),
+        PostReactionDeleted(AccountId, PostId, ReactionId, ReactionKind),
     }
 );
 
@@ -173,7 +173,7 @@ decl_module! {
       ReactionIdsByPostId::mutate(post.id, |ids| ids.push(reaction_id));
       <PostReactionIdByAccount<T>>::insert((owner.clone(), post_id), reaction_id);
 
-      Self::deposit_event(RawEvent::PostReactionCreated(owner, post_id, reaction_id));
+      Self::deposit_event(RawEvent::PostReactionCreated(owner, post_id, reaction_id, kind));
       Ok(())
     }
 
@@ -217,7 +217,7 @@ decl_module! {
       <ReactionById<T>>::insert(reaction_id, reaction);
       <PostById<T>>::insert(post_id, post);
 
-      Self::deposit_event(RawEvent::PostReactionUpdated(owner, post_id, reaction_id));
+      Self::deposit_event(RawEvent::PostReactionUpdated(owner, post_id, reaction_id, new_kind));
       Ok(())
     }
 
@@ -251,7 +251,7 @@ decl_module! {
       ReactionIdsByPostId::mutate(post.id, |ids| remove_from_vec(ids, reaction_id));
       <PostReactionIdByAccount<T>>::remove((owner.clone(), post_id));
 
-      Self::deposit_event(RawEvent::PostReactionDeleted(owner, post_id, reaction_id));
+      Self::deposit_event(RawEvent::PostReactionDeleted(owner, post_id, reaction_id, reaction.kind));
       Ok(())
     }
   }
