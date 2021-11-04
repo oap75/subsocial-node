@@ -27,7 +27,7 @@ use frame_support::{
     dispatch::{DispatchError, DispatchResult},
     traits::{Get, Currency, ExistenceRequirement, ReservableCurrency},
 };
-use sp_runtime::RuntimeDebug;
+use sp_runtime::{RuntimeDebug, traits::Zero};
 use sp_std::prelude::*;
 use frame_system::{self as system, ensure_signed, ensure_root};
 
@@ -39,6 +39,7 @@ use pallet_permissions::{Module as Permissions, SpacePermission, SpacePermission
 use pallet_utils::{Module as Utils, Error as UtilsError, SpaceId, WhoAndWhen, Content};
 
 pub mod rpc;
+pub mod migrations;
 
 /// Information about a space's owner, its' content, visibility and custom permissions.
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
@@ -188,9 +189,15 @@ decl_storage! {
             map hasher(twox_64_concat) T::AccountId => Vec<SpaceId>;
 
         pub PalletSettings get(fn settings): SpacesSettings;
+
+        /// True if `SpaceIdByHandle` storage is already fixed.
+        pub SpaceIdByHandleStorageFixed: bool = false;
     }
     add_extra_genesis {
       config(endowed_account): T::AccountId;
+      build(|_: &Self| {
+        SpaceIdByHandleStorageFixed::put(true);
+      })
     }
 }
 
@@ -216,6 +223,16 @@ decl_module! {
 
     // Initializing events
     fn deposit_event() = default;
+
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+      let mut final_weight = Zero::zero();
+
+      if !SpaceIdByHandleStorageFixed::get() {
+        final_weight = migrations::fix_corrupted_handles_storage::<T>();
+      }
+
+      final_weight
+    }
 
     #[weight = 500_000 + T::DbWeight::get().reads_writes(5, 4)]
     pub fn create_space(

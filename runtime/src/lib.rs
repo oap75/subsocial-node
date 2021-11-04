@@ -418,6 +418,7 @@ impl pallet_space_ownership::Config for Runtime {
 	type Event = Event;
 }
 
+// TODO: do not change until handle we don't write pet handle deposit value into a storage.
 parameter_types! {
 	pub HandleDeposit: Balance = 5 * DOLLARS;
 }
