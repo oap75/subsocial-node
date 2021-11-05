@@ -24,8 +24,9 @@
 use codec::{Decode, Encode};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure,
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo},
     traits::{Get, Currency, ExistenceRequirement, ReservableCurrency},
+    weights::Pays,
 };
 use sp_runtime::{RuntimeDebug, traits::Zero};
 use sp_std::prelude::*;
@@ -208,7 +209,6 @@ decl_event!(
         SpaceCreated(AccountId, SpaceId),
         SpaceUpdated(AccountId, SpaceId),
         SpaceDeleted(AccountId, SpaceId),
-        SpaceHandleCleared(SpaceId, Vec<u8>),
     }
 );
 
@@ -404,7 +404,7 @@ decl_module! {
     }
 
     #[weight = 10_000 + T::DbWeight::get().reads_writes(2, 2)]
-    pub fn force_unreserve_handle(origin, handle: Vec<u8>) -> DispatchResult {
+    pub fn force_unreserve_handle(origin, handle: Vec<u8>) -> DispatchResultWithPostInfo {
       ensure_root(origin)?;
 
       if let Some(space_id) = Self::space_id_by_handle(&handle) {
@@ -416,11 +416,9 @@ decl_module! {
         } else {
           SpaceIdByHandle::remove(&handle);
         }
-
-        Self::deposit_event(RawEvent::SpaceHandleCleared(space_id, handle));
       }
 
-      Ok(())
+      Ok(Pays::No.into())
     }
   }
 }
