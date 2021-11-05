@@ -1214,7 +1214,6 @@ dependencies = [
  "pallet-profiles",
  "pallet-reactions",
  "pallet-roles",
- "pallet-scores",
  "pallet-space-follows",
  "pallet-space-history",
  "pallet-space-ownership",
@@ -3986,21 +3985,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-donations"
-version = "0.7.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-permissions",
- "pallet-posts",
- "pallet-spaces",
- "pallet-utils",
- "parity-scale-codec",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-dotsama-claims"
 version = "0.7.0"
 dependencies = [
@@ -4231,25 +4215,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-scores"
-version = "0.7.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-posts",
- "pallet-profile-follows",
- "pallet-profiles",
- "pallet-reactions",
- "pallet-space-follows",
- "pallet-spaces",
- "pallet-utils",
- "parity-scale-codec",
- "sp-core",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-session"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.10#acb44df78015906174daf359b40916b7bef58c57"
@@ -4298,23 +4263,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-space-multi-ownership"
-version = "0.7.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-timestamp",
- "pallet-utils",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-space-ownership"
 version = "0.7.0"
 dependencies = [
@@ -4339,23 +4287,6 @@ dependencies = [
  "pallet-utils",
  "parity-scale-codec",
  "serde",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-subscriptions"
-version = "0.7.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-permissions",
- "pallet-spaces",
- "pallet-sudo",
- "pallet-utils",
- "parity-scale-codec",
- "sp-core",
- "sp-io",
  "sp-runtime",
  "sp-std",
 ]
@@ -7809,7 +7740,6 @@ dependencies = [
  "pallet-reactions",
  "pallet-roles",
  "pallet-scheduler",
- "pallet-scores",
  "pallet-space-follows",
  "pallet-space-history",
  "pallet-space-ownership",
