@@ -147,15 +147,6 @@ impl<T: Config> Post<T> {
         self.downvotes_count = self.downvotes_count.saturating_sub(1);
     }
 
-    #[allow(clippy::comparison_chain)]
-    pub fn change_score(&mut self, diff: i16) {
-        if diff > 0 {
-            self.score = self.score.saturating_add(diff.abs() as i32);
-        } else if diff < 0 {
-            self.score = self.score.saturating_sub(diff.abs() as i32);
-        }
-    }
-
     pub fn is_public(&self) -> bool {
         !self.hidden && self.content.is_some()
     }
@@ -233,8 +224,6 @@ impl<T: Config> Module<T> {
         shared_post_id: PostId
     ) -> DispatchResult {
         original_post.inc_shares();
-
-        T::PostScores::score_post_on_new_share(account.clone(), original_post)?;
 
         let original_post_id = original_post.id;
         PostById::insert(original_post_id, original_post.clone());
@@ -329,7 +318,6 @@ impl<T: Config> Module<T> {
     // TODO: maybe add for_each_reply?
 
     pub(crate) fn create_comment(
-        creator: &T::AccountId,
         new_post_id: PostId,
         comment_ext: Comment,
         root_post: &mut Post<T>
@@ -347,7 +335,6 @@ impl<T: Config> Module<T> {
         }
 
         root_post.inc_replies();
-        T::PostScores::score_root_post_on_new_comment(creator.clone(), root_post)?;
 
         Self::for_each_post_ancestor(commented_post_id, |post| post.inc_replies())?;
         PostById::insert(root_post.id, root_post);
@@ -432,12 +419,6 @@ impl<T: Config> Module<T> {
                         |counter| *counter = counter.saturating_sub(1)
                     )?;
 
-                    // Decrease a score on the old space
-                    Spaces::<T>::mutate_space_by_id(
-                        old_space_id,
-                        |space| space.score = space.score.saturating_sub(post.score)
-                    )?;
-
                     PostIdsBySpaceId::mutate(old_space_id, |post_ids| remove_from_vec(post_ids, post.id));
                 }
 
@@ -446,12 +427,6 @@ impl<T: Config> Module<T> {
                     new_space_id,
                     post,
                     |counter| *counter = counter.saturating_add(1)
-                )?;
-
-                // Increase a score on the new space
-                Spaces::<T>::mutate_space_by_id(
-                    new_space_id,
-                    |space| space.score = space.score.saturating_add(post.score)
                 )?;
 
                 PostIdsBySpaceId::mutate(new_space_id, |post_ids| post_ids.push(post.id));
@@ -484,13 +459,6 @@ impl<T: Config> Module<T> {
             dec_replies_count(root_post);
             PostById::<T>::insert(root_post.id, root_post.clone());
             Self::for_each_post_ancestor(parent_id, dec_replies_count)?;
-
-            // Subtract the weight of CreateComment from the root post and its space
-            T::PostScores::score_root_post_on_new_comment(post.created.account.clone(), root_post)?;
-            let replies = Self::get_post_replies(post_id)?;
-            for reply in replies.iter() {
-                T::PostScores::score_root_post_on_new_comment(reply.created.account.clone(), root_post)?;
-            }
         } else {
             // If post is not a comment:
 
@@ -501,11 +469,6 @@ impl<T: Config> Module<T> {
                 space_id,
                 &post,
                 |counter| *counter = counter.saturating_sub(1)
-            )?;
-
-            Spaces::<T>::mutate_space_by_id(
-                space_id,
-                |space| space.score = space.score.saturating_sub(post.score)
             )?;
 
             post.space_id = None;

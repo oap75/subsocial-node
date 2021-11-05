@@ -34,8 +34,6 @@ pub struct FlatSpace<AccountId, BlockNumber> {
     pub hidden_posts_count: u32,
     pub visible_posts_count: u32,
     pub followers_count: u32,
-
-    pub score: i32,
 }
 
 #[cfg(feature = "std")]
@@ -52,7 +50,7 @@ impl<T: Config> From<Space<T>> for FlatSpace<T::AccountId, T::BlockNumber> {
         let Space {
             id, created, updated, owner,
             parent_id, handle, content, hidden, posts_count,
-            hidden_posts_count, followers_count, score, ..
+            hidden_posts_count, followers_count, ..
         } = from;
 
         Self {
@@ -67,7 +65,6 @@ impl<T: Config> From<Space<T>> for FlatSpace<T::AccountId, T::BlockNumber> {
             hidden_posts_count,
             visible_posts_count: posts_count.saturating_sub(hidden_posts_count),
             followers_count,
-            score,
         }
     }
 }

@@ -339,7 +339,6 @@ parameter_types! {
 impl pallet_posts::Config for Runtime {
 	type Event = Event;
 	type MaxCommentDepth = MaxCommentDepth;
-	type PostScores = Scores;
 	type AfterPostUpdated = PostHistory;
 	type IsPostBlocked = ()/*Moderation*/;
 }
@@ -352,8 +351,8 @@ parameter_types! {}
 
 impl pallet_profile_follows::Config for Runtime {
 	type Event = Event;
-	type BeforeAccountFollowed = Scores;
-	type BeforeAccountUnfollowed = Scores;
+	type BeforeAccountFollowed = ();
+	type BeforeAccountUnfollowed = ();
 }
 
 parameter_types! {}
@@ -371,7 +370,6 @@ parameter_types! {}
 
 impl pallet_reactions::Config for Runtime {
 	type Event = Event;
-	type PostReactionScores = Scores;
 }
 
 parameter_types! {
@@ -401,28 +399,12 @@ parameter_types! {
   pub const DownvoteCommentActionWeight: i16 = -2;
 }
 
-impl pallet_scores::Config for Runtime {
-	type Event = Event;
-
-	type FollowSpaceActionWeight = FollowSpaceActionWeight;
-	type FollowAccountActionWeight = FollowAccountActionWeight;
-
-	type SharePostActionWeight = SharePostActionWeight;
-	type UpvotePostActionWeight = UpvotePostActionWeight;
-	type DownvotePostActionWeight = DownvotePostActionWeight;
-
-	type CreateCommentActionWeight = CreateCommentActionWeight;
-	type ShareCommentActionWeight = ShareCommentActionWeight;
-	type UpvoteCommentActionWeight = UpvoteCommentActionWeight;
-	type DownvoteCommentActionWeight = DownvoteCommentActionWeight;
-}
-
 parameter_types! {}
 
 impl pallet_space_follows::Config for Runtime {
 	type Event = Event;
-	type BeforeSpaceFollowed = Scores;
-	type BeforeSpaceUnfollowed = Scores;
+	type BeforeSpaceFollowed = ();
+	type BeforeSpaceUnfollowed = ();
 }
 
 parameter_types! {}
@@ -516,7 +498,6 @@ construct_runtime!(
         ProfileHistory: pallet_profile_history::{Pallet, Storage},
         Reactions: pallet_reactions::{Pallet, Call, Storage, Event<T>},
         Roles: pallet_roles::{Pallet, Call, Storage, Event<T>},
-        Scores: pallet_scores::{Pallet, Call, Storage, Event<T>},
         SpaceFollows: pallet_space_follows::{Pallet, Call, Storage, Event<T>},
         SpaceHistory: pallet_space_history::{Pallet, Storage},
         SpaceOwnership: pallet_space_ownership::{Pallet, Call, Storage, Event<T>},

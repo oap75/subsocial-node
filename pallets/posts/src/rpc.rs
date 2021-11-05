@@ -83,8 +83,6 @@ pub struct FlatPost<AccountId, BlockNumber> {
     pub shares_count: u16,
     pub upvotes_count: u16,
     pub downvotes_count: u16,
-
-    pub score: i32,
 }
 
 #[derive(Encode, Decode, Ord, PartialOrd, Clone, Eq, PartialEq)]
@@ -110,7 +108,7 @@ impl<T: Config> From<Post<T>> for FlatPost<T::AccountId, T::BlockNumber> {
         let Post {
             id, created, updated, owner,
             extension, space_id, content, hidden, replies_count,
-            hidden_replies_count, shares_count, upvotes_count, downvotes_count, score
+            hidden_replies_count, shares_count, upvotes_count, downvotes_count, ..
         } = from;
 
         Self {
@@ -127,7 +125,6 @@ impl<T: Config> From<Post<T>> for FlatPost<T::AccountId, T::BlockNumber> {
             shares_count,
             upvotes_count,
             downvotes_count,
-            score,
         }
     }
 }

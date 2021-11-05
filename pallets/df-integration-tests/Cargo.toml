@@ -30,7 +30,6 @@ std = [
     'pallet-profiles/std',
     'pallet-reactions/std',
     'pallet-roles/std',
-    'pallet-scores/std',
     'pallet-space-follows/std',
     'pallet-space-history/std',
     'pallet-space-ownership/std',
@@ -61,7 +60,6 @@ pallet-profile-history = { default-features = false, path = '../profile-history'
 pallet-profiles = { default-features = false, path = '../profiles' }
 pallet-reactions = { default-features = false, path = '../reactions' }
 pallet-roles = { default-features = false, path = '../roles' }
-pallet-scores = { default-features = false, path = '../scores' }
 pallet-space-follows = { default-features = false, path = '../space-follows' }
 pallet-space-history = { default-features = false, path = '../space-history' }
 pallet-space-ownership = { default-features = false, path = '../space-ownership' }
