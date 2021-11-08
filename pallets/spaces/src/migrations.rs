@@ -13,9 +13,9 @@ pub fn fix_corrupted_handles_storage<T: Config>() -> frame_support::weights::Wei
     handles_iterated += 1;
 
     if let Some(space) = Module::<T>::space_by_id(&space_id) {
-      let handle_lowered = space.handle.map(Utils::Module::<T>::lowercase_handle);
+      let space_handle_lc = space.handle.map(Utils::Module::<T>::lowercase_handle);
 
-      if handle_lowered.is_none() || handle_lowered.as_ref() != Some(&handle) {
+      if space_handle_lc.is_none() || space_handle_lc.as_ref() != Some(&handle) {
         handles_to_remove.push(handle.clone());
       }
     } else {
