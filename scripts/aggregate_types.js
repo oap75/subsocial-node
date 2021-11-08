@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
+// TODO: no working. Implement this
 const skipDirectories = []
 const palletsPath = path.join(__dirname, `../pallets`)
 
@@ -19,14 +20,15 @@ let allTypes = {
   "IpfsCid": "Text"
 };
 
-const getTypesFilesPaths = () =>
+const getTypeFilePaths = () =>
   fs.readdirSync(palletsPath, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => path.join(palletsPath, `/${dirent.name}/types.json`))
     .filter(path => fs.existsSync(path))
 
 // Aggregate types from all pallets into `allTypes`.
-for (let jsonPath of getTypesFilesPaths()) {
+const typeFiles = getTypeFilePaths()
+for (let jsonPath of typeFiles) {
   let palletTypes = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   allTypes = {...allTypes, ...palletTypes};
 }

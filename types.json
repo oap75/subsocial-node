@@ -1,5 +1,4 @@
 {
-  "AccountInfo": "AccountInfoWithTripleRefCount",
   "LookupSource": "AccountId",
   "IpfsCid": "Text",
   "Faucet": {
