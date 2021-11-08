@@ -20,14 +20,12 @@ let allTypes = {
   "IpfsCid": "Text"
 };
 
-const getTypeFilePaths = () =>
-  fs.readdirSync(palletsPath, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => path.join(palletsPath, `/${dirent.name}/types.json`))
-    .filter(path => fs.existsSync(path))
+const typeFiles = fs.readdirSync(palletsPath, { withFileTypes: true })
+  .filter(dirent => dirent.isDirectory())
+  .map(dirent => path.join(palletsPath, `/${dirent.name}/types.json`))
+  .filter(path => fs.existsSync(path))
 
 // Aggregate types from all pallets into `allTypes`.
-const typeFiles = getTypeFilePaths()
 for (let jsonPath of typeFiles) {
   let palletTypes = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   allTypes = {...allTypes, ...palletTypes};
