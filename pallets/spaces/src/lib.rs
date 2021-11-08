@@ -24,10 +24,11 @@
 use codec::{Decode, Encode};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure,
-    dispatch::{DispatchError, DispatchResult},
+    dispatch::{DispatchError, DispatchResult, DispatchResultWithPostInfo},
     traits::{Get, Currency, ExistenceRequirement, ReservableCurrency},
+    weights::Pays,
 };
-use sp_runtime::RuntimeDebug;
+use sp_runtime::{RuntimeDebug, traits::Zero};
 use sp_std::prelude::*;
 use frame_system::{self as system, ensure_signed, ensure_root};
 
@@ -39,6 +40,7 @@ use pallet_permissions::{Module as Permissions, SpacePermission, SpacePermission
 use pallet_utils::{Module as Utils, Error as UtilsError, SpaceId, WhoAndWhen, Content};
 
 pub mod rpc;
+pub mod migrations;
 
 /// Information about a space's owner, its' content, visibility and custom permissions.
 #[derive(Encode, Decode, Clone, Eq, PartialEq, RuntimeDebug)]
@@ -188,9 +190,16 @@ decl_storage! {
             map hasher(twox_64_concat) T::AccountId => Vec<SpaceId>;
 
         pub PalletSettings get(fn settings): SpacesSettings;
+
+        /// True if `SpaceIdByHandle` storage is already fixed.
+        // TODO delete this storage and corresponding migration, after the migration executed and the storage value is `true`.
+        pub SpaceIdByHandleStorageFixed: bool = false;
     }
     add_extra_genesis {
       config(endowed_account): T::AccountId;
+      build(|_: &Self| {
+        SpaceIdByHandleStorageFixed::put(true);
+      })
     }
 }
 
@@ -215,6 +224,16 @@ decl_module! {
 
     // Initializing events
     fn deposit_event() = default;
+
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+      let mut final_weight = Zero::zero();
+
+      if !SpaceIdByHandleStorageFixed::get() {
+        final_weight = migrations::fix_corrupted_handles_storage::<T>();
+      }
+
+      final_weight
+    }
 
     #[weight = 500_000 + T::DbWeight::get().reads_writes(5, 4)]
     pub fn create_space(
@@ -255,9 +274,10 @@ decl_module! {
       let new_space = &mut Space::new(space_id, parent_id_opt, owner.clone(), content, handle_opt.clone(), permissions);
 
       if let Some(handle) = handle_opt {
-        Self::reserve_handle(&new_space, handle)?;
+        new_space.reserve_handle(handle)?;
       }
 
+      // FIXME: What's about handle reservation if this fails?
       T::BeforeSpaceCreated::before_space_created(owner.clone(), new_space)?;
 
       <SpaceById<T>>::insert(space_id, new_space);
@@ -383,6 +403,26 @@ decl_module! {
 
       Ok(())
     }
+
+    #[weight = 10_000 + T::DbWeight::get().reads_writes(2, 2)]
+    pub fn force_unreserve_handle(origin, handle: Vec<u8>) -> DispatchResultWithPostInfo {
+      ensure_root(origin)?;
+
+      let lowercased_handle = handle.to_ascii_lowercase();
+
+      if let Some(space_id) = Self::space_id_by_handle(&lowercased_handle) {
+        if let Ok(mut space) = Self::require_space(space_id) {
+          space.unreserve_handle(lowercased_handle)?;
+
+          space.handle = None;
+          SpaceById::<T>::insert(space_id, space);
+        } else {
+          SpaceIdByHandle::remove(&lowercased_handle);
+        }
+      }
+
+      Ok(Pays::No.into())
+    }
   }
 }
 
@@ -468,6 +508,26 @@ impl<T: Config> Space<T> {
 
     pub fn is_unlisted(&self) -> bool {
         !self.is_public()
+    }
+
+    pub fn reserve_handle(
+      &self,
+      handle: Vec<u8>
+    ) -> DispatchResult {
+      let handle_in_lowercase = Module::<T>::lowercase_and_ensure_unique_handle(handle)?;
+      Module::<T>::reserve_handle_deposit(&self.owner)?;
+      SpaceIdByHandle::insert(handle_in_lowercase, self.id);
+      Ok(())
+    }
+
+    pub fn unreserve_handle(
+      &self,
+      handle: Vec<u8>
+    ) -> DispatchResult {
+      let handle_in_lowercase = Utils::<T>::lowercase_handle(handle);
+      Module::<T>::unreserve_handle_deposit(&self.owner);
+      SpaceIdByHandle::remove(handle_in_lowercase);
+      Ok(())
     }
 }
 
@@ -575,26 +635,6 @@ impl<T: Config> Module<T> {
         Ok(())
     }
 
-    fn reserve_handle(
-        space: &Space<T>,
-        handle: Vec<u8>
-    ) -> DispatchResult {
-        let handle_in_lowercase = Self::lowercase_and_ensure_unique_handle(handle)?;
-        Self::reserve_handle_deposit(&space.owner)?;
-        SpaceIdByHandle::insert(handle_in_lowercase, space.id);
-        Ok(())
-    }
-
-    fn unreserve_handle(
-        space: &Space<T>,
-        handle: Vec<u8>
-    ) -> DispatchResult {
-        let handle_in_lowercase = Utils::<T>::lowercase_handle(handle);
-        Self::unreserve_handle_deposit(&space.owner);
-        SpaceIdByHandle::remove(handle_in_lowercase);
-        Ok(())
-    }
-
     fn update_handle(
         space: &Space<T>,
         maybe_new_handle: Option<Option<Vec<u8>>>,
@@ -621,12 +661,12 @@ impl<T: Config> Module<T> {
                     }
                 } else {
                     // Unreserve the current handle
-                    Self::unreserve_handle(space, old_handle)?;
+                    space.unreserve_handle(old_handle)?;
                     is_handle_updated = true;
                 }
             } else if let Some(new_handle) = new_handle_opt {
                 // Reserve a handle for the space that has no handle yet
-                Self::reserve_handle(space, new_handle)?;
+                space.reserve_handle(new_handle)?;
                 is_handle_updated = true;
             }
         }

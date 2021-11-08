@@ -418,6 +418,7 @@ impl pallet_space_ownership::Config for Runtime {
 	type Event = Event;
 }
 
+// TODO: do not change until we save a handle deposit into a storage per every handle.
 parameter_types! {
 	pub HandleDeposit: Balance = 5 * DOLLARS;
 }
