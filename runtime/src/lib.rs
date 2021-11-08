@@ -448,7 +448,7 @@ construct_runtime!(
         NodeBlock = opaque::Block,
         UncheckedExtrinsic = UncheckedExtrinsic
     {
-        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
 		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
 		Aura: pallet_aura::{Pallet, Config<T>},
@@ -456,30 +456,30 @@ construct_runtime!(
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
-        Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>},
-        Utility: pallet_utility::{Pallet, Call, Event},
+		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>},
+		Utility: pallet_utility::{Pallet, Call, Event},
 
-        // Subsocial custom pallets:
+		// Subsocial custom pallets:
 
-        Permissions: pallet_permissions::{Pallet, Call},
-        Posts: pallet_posts::{Pallet, Call, Storage, Event<T>},
-        PostHistory: pallet_post_history::{Pallet, Storage},
-        ProfileFollows: pallet_profile_follows::{Pallet, Call, Storage, Event<T>},
-        Profiles: pallet_profiles::{Pallet, Call, Storage, Event<T>},
-        ProfileHistory: pallet_profile_history::{Pallet, Storage},
-        Reactions: pallet_reactions::{Pallet, Call, Storage, Event<T>},
-        Roles: pallet_roles::{Pallet, Call, Storage, Event<T>},
-        SpaceFollows: pallet_space_follows::{Pallet, Call, Storage, Event<T>},
-        SpaceHistory: pallet_space_history::{Pallet, Storage},
-        SpaceOwnership: pallet_space_ownership::{Pallet, Call, Storage, Event<T>},
-        Spaces: pallet_spaces::{Pallet, Call, Storage, Event<T>, Config<T>},
-        Utils: pallet_utils::{Pallet, Storage, Event<T>, Config<T>},
+		Permissions: pallet_permissions::{Pallet, Call},
+		Posts: pallet_posts::{Pallet, Call, Storage, Event<T>},
+		PostHistory: pallet_post_history::{Pallet, Storage},
+		ProfileFollows: pallet_profile_follows::{Pallet, Call, Storage, Event<T>},
+		Profiles: pallet_profiles::{Pallet, Call, Storage, Event<T>},
+		ProfileHistory: pallet_profile_history::{Pallet, Storage},
+		Reactions: pallet_reactions::{Pallet, Call, Storage, Event<T>},
+		Roles: pallet_roles::{Pallet, Call, Storage, Event<T>},
+		SpaceFollows: pallet_space_follows::{Pallet, Call, Storage, Event<T>},
+		SpaceHistory: pallet_space_history::{Pallet, Storage},
+		SpaceOwnership: pallet_space_ownership::{Pallet, Call, Storage, Event<T>},
+		Spaces: pallet_spaces::{Pallet, Call, Storage, Event<T>, Config<T>},
+		Utils: pallet_utils::{Pallet, Storage, Event<T>, Config<T>},
 
-        // New experimental pallets. Not recommended to use in production yet.
+		// New experimental pallets. Not recommended to use in production yet.
 
-        Faucets: pallet_faucets::{Pallet, Call, Storage, Event<T>},
-        DotsamaClaims: pallet_dotsama_claims::{Pallet, Call, Storage, Event<T>},
-        // Moderation: pallet_moderation::{Pallet, Call, Storage, Event<T>},
+		Faucets: pallet_faucets::{Pallet, Call, Storage, Event<T>},
+		DotsamaClaims: pallet_dotsama_claims::{Pallet, Call, Storage, Event<T>},
+		// Moderation: pallet_moderation::{Pallet, Call, Storage, Event<T>},
     }
 );
 
