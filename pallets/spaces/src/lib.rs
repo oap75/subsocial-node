@@ -409,7 +409,7 @@ decl_module! {
 
       let lowercased_handle = handle.to_ascii_lowercase();
 
-      if let Some(space_id) = Self::space_id_by_handle(&handle) {
+      if let Some(space_id) = Self::space_id_by_handle(&lowercased_handle) {
         if let Ok(mut space) = Self::require_space(space_id) {
           space.unreserve_handle(lowercased_handle)?;
 
