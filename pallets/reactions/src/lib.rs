@@ -245,7 +245,6 @@ decl_module! {
 
 impl<T: Config> Module<T> {
 
-    // FIXME: don't add reaction in storage before the checks in 'create_post_reaction' are done
     pub fn insert_new_reaction(account: T::AccountId, kind: ReactionKind) -> ReactionId {
         let id = Self::next_reaction_id();
         let reaction: Reaction<T> = Reaction {
