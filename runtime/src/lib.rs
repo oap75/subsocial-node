@@ -343,11 +343,7 @@ impl pallet_posts::Config for Runtime {
 	type IsPostBlocked = ()/*Moderation*/;
 }
 
-parameter_types! {}
-
 impl pallet_post_history::Config for Runtime {}
-
-parameter_types! {}
 
 impl pallet_profile_follows::Config for Runtime {
 	type Event = Event;
@@ -355,18 +351,12 @@ impl pallet_profile_follows::Config for Runtime {
 	type BeforeAccountUnfollowed = ();
 }
 
-parameter_types! {}
-
 impl pallet_profiles::Config for Runtime {
 	type Event = Event;
 	type AfterProfileUpdated = ProfileHistory;
 }
 
-parameter_types! {}
-
 impl pallet_profile_history::Config for Runtime {}
-
-parameter_types! {}
 
 impl pallet_reactions::Config for Runtime {
 	type Event = Event;
@@ -385,29 +375,11 @@ impl pallet_roles::Config for Runtime {
 	type IsContentBlocked = ()/*Moderation*/;
 }
 
-parameter_types! {
-  pub const FollowSpaceActionWeight: i16 = 7;
-  pub const FollowAccountActionWeight: i16 = 3;
-
-  pub const SharePostActionWeight: i16 = 7;
-  pub const UpvotePostActionWeight: i16 = 5;
-  pub const DownvotePostActionWeight: i16 = -3;
-
-  pub const CreateCommentActionWeight: i16 = 5;
-  pub const ShareCommentActionWeight: i16 = 5;
-  pub const UpvoteCommentActionWeight: i16 = 4;
-  pub const DownvoteCommentActionWeight: i16 = -2;
-}
-
-parameter_types! {}
-
 impl pallet_space_follows::Config for Runtime {
 	type Event = Event;
 	type BeforeSpaceFollowed = ();
 	type BeforeSpaceUnfollowed = ();
 }
-
-parameter_types! {}
 
 impl pallet_space_ownership::Config for Runtime {
 	type Event = Event;
@@ -440,8 +412,6 @@ impl pallet_dotsama_claims::Config for Runtime {
     type AccountsSetLimit = AccountsSetLimit;
     type WeightInfo = pallet_dotsama_claims::weights::SubstrateWeight<Runtime>;
 }
-
-parameter_types! {}
 
 impl pallet_space_history::Config for Runtime {}
 
