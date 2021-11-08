@@ -407,14 +407,16 @@ decl_module! {
     pub fn force_unreserve_handle(origin, handle: Vec<u8>) -> DispatchResultWithPostInfo {
       ensure_root(origin)?;
 
+      let lowercased_handle = handle.to_ascii_lowercase();
+
       if let Some(space_id) = Self::space_id_by_handle(&handle) {
         if let Ok(mut space) = Self::require_space(space_id) {
-          space.unreserve_handle(handle.clone())?;
+          space.unreserve_handle(lowercased_handle)?;
 
           space.handle = None;
           SpaceById::<T>::insert(space_id, space);
         } else {
-          SpaceIdByHandle::remove(&handle);
+          SpaceIdByHandle::remove(&lowercased_handle);
         }
       }
 
