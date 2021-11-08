@@ -192,6 +192,7 @@ decl_storage! {
         pub PalletSettings get(fn settings): SpacesSettings;
 
         /// True if `SpaceIdByHandle` storage is already fixed.
+        // TODO delete this storage and corresponding migration, after the migration executed and the storage value is `true`.
         pub SpaceIdByHandleStorageFixed: bool = false;
     }
     add_extra_genesis {
