@@ -99,6 +99,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("subsocial"),
 	impl_name: create_runtime_str!("dappforce-subsocial"),
 	authoring_version: 0,
+    // TODO: don't forget to apply `MigratePalletVersionToStorageVersion` on the next upgrade.
 	spec_version: 14,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
@@ -512,7 +513,8 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPallets,
-    MigratePalletVersionToStorageVersion,
+    // TODO: uncomment on the next runtime upgrade after Substrate migrations.
+    // MigratePalletVersionToStorageVersion,
 >;
 
 /// Migrate from `PalletVersion` to the new `StorageVersion`
