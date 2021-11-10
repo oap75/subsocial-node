@@ -1,33 +1,6 @@
 {
-  "Address": "AccountId",
   "LookupSource": "AccountId",
   "IpfsCid": "Text",
-  "DonationId": "u64",
-  "DonationRecipient": {
-    "_enum": {
-      "Account": "AccountId",
-      "Space": "SpaceId",
-      "Post": "PostId"
-    }
-  },
-  "Donation": {
-    "id": "DonationId",
-    "created": "WhoAndWhen",
-    "recipient": "DonationRecipient",
-    "donation_wallet": "AccountId",
-    "amount": "Balance",
-    "comment_id": "Option<PostId>"
-  },
-  "DonationSettings": {
-    "donations_allowed": "bool",
-    "min_amount": "Option<Balance>",
-    "max_amount": "Option<Balance>"
-  },
-  "DonationSettingsUpdate": {
-    "donations_allowed": "Option<bool>",
-    "min_amount": "Option<Option<Balance>>",
-    "max_amount": "Option<Option<Balance>>"
-  },
   "Faucet": {
     "enabled": "bool",
     "period": "BlockNumber",
@@ -208,26 +181,6 @@
     "content": "Option<Content>",
     "permissions": "Option<SpacePermissionSet>"
   },
-  "ScoringAction": {
-    "_enum": [
-      "UpvotePost",
-      "DownvotePost",
-      "SharePost",
-      "CreateComment",
-      "UpvoteComment",
-      "DownvoteComment",
-      "ShareComment",
-      "FollowSpace",
-      "FollowAccount"
-    ]
-  },
-  "SessionKey": {
-    "created": "WhoAndWhen",
-    "updated": "Option<WhoAndWhen>",
-    "expires_at": "BlockNumber",
-    "limit": "Option<Balance>",
-    "spent": "Balance"
-  },
   "SpaceHistoryRecord": {
     "edited": "WhoAndWhen",
     "old_data": "SpaceUpdate"
@@ -254,36 +207,9 @@
     "hidden": "Option<bool>",
     "permissions": "Option<Option<SpacePermissions>>"
   },
-  "SubscriptionPlanId": "u64",
-  "SubscriptionId": "u64",
-  "SubscriptionPeriod": {
-    "_enum": {
-      "Daily": "Null",
-      "Weekly": "Null",
-      "Monthly": "Null",
-      "Quarterly": "Null",
-      "Yearly": "Null",
-      "Custom": "BlockNumber"
-    }
-  },
-  "SubscriptionPlan": {
-    "id": "SubscriptionPlanId",
-    "created": "WhoAndWhen",
-    "updated": "Option<WhoAndWhen>",
-    "is_active": "bool",
-    "content": "Content",
-    "space_id": "SpaceId",
-    "wallet": "Option<AccountId>",
-    "price": "Balance",
-    "period": "SubscriptionPeriod"
-  },
-  "Subscription": {
-    "id": "SubscriptionPlanId",
-    "created": "WhoAndWhen",
-    "updated": "Option<WhoAndWhen>",
-    "is_active": "bool",
-    "wallet": "Option<AccountId>",
-    "plan_id": "SubscriptionPlanId"
+  "SpaceForRoles": {
+    "owner": "AccountId",
+    "permissions": "Option<SpacePermissions>"
   },
   "SpaceId": "u64",
   "WhoAndWhen": {

@@ -4,33 +4,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const pallets = [
-  "donations",
-  "faucets",
-  "moderation",
-  "permissions",
-  "post-history",
-  "posts",
-  "profile-follows",
-  "profile-history",
-  "profiles",
-  "reactions",
-  "roles",
-  "scores",
-  "session-keys",
-  "space-follows",
-  "space-history",
-  "space-ownership",
-  "spaces",
-  "subscriptions",
-  "utils",
-]
+// TODO: no working. Implement this
+const skipDirectories = []
+const palletsPath = path.join(__dirname, `../pallets`)
 
 // Types that are native to the runtime itself (i.e. come from lib.rs)
-// These specifics are from https://polkadot.js.org/api/start/types.extend.html#impact-on-extrinsics
+// These specifics are from https://polkadot.js.org/docs/api/start/types.extend#impact-on-extrinsics
 const runtimeTypeOverrides = {
-  "Address": "AccountId",
-  "LookupSource": "AccountId"
+  // "AccountInfo": "AccountInfoWithTripleRefCount",
+  "LookupSource": "AccountId",
 }
 
 let allTypes = {
@@ -38,9 +20,13 @@ let allTypes = {
   "IpfsCid": "Text"
 };
 
+const typeFiles = fs.readdirSync(palletsPath, { withFileTypes: true })
+  .filter(dirent => dirent.isDirectory())
+  .map(dirent => path.join(palletsPath, `/${dirent.name}/types.json`))
+  .filter(path => fs.existsSync(path))
+
 // Aggregate types from all pallets into `allTypes`.
-for (let pallet of pallets) {
-  let jsonPath = path.join(__dirname, `../pallets/${pallet}/types.json`);
+for (let jsonPath of typeFiles) {
   let palletTypes = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
   allTypes = {...allTypes, ...palletTypes};
 }

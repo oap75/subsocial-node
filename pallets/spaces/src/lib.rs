@@ -489,15 +489,6 @@ impl<T: Config> Space<T> {
         self.followers_count = self.followers_count.saturating_sub(1);
     }
 
-    #[allow(clippy::comparison_chain)]
-    pub fn change_score(&mut self, diff: i16) {
-        if diff > 0 {
-            self.score = self.score.saturating_add(diff.abs() as i32);
-        } else if diff < 0 {
-            self.score = self.score.saturating_sub(diff.abs() as i32);
-        }
-    }
-
     pub fn try_get_parent(&self) -> Result<SpaceId, DispatchError> {
         self.parent_id.ok_or_else(|| Error::<T>::SpaceIsAtRoot.into())
     }

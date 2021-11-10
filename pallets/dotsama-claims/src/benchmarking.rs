@@ -4,18 +4,15 @@
 
 use super::*;
 use sp_std::vec;
-use crate::Module as Pallet;
+use crate::Pallet as Pallet;
 use frame_system::{RawOrigin};
-use frame_benchmarking::{benchmarks, account};
+use frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite};
 use frame_support::{
     ensure, traits::{Currency, Get},
 };
 use sp_runtime::traits::Bounded;
 use pallet_utils::BalanceOf;
-use sp_std::{
-    vec::Vec,
-    boxed::Box,
-};
+use sp_std::vec::Vec;
 
 const REWARDS_SENDER_SEED: u32 = 0;
 const ELIGIBLE_ACCOUNT_SEED: u32 = 1;
@@ -73,18 +70,8 @@ benchmarks! {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::mock::{Test, ExtBuilder};
-    use frame_support::assert_ok;
-
-    #[test]
-    fn test_benchmarks() {
-        ExtBuilder::build().execute_with(|| {
-            assert_ok!(test_benchmark_claim_tokens::<Test>());
-            assert_ok!(test_benchmark_set_rewards_sender::<Test>());
-            assert_ok!(test_benchmark_add_eligible_accounts::<Test>());
-        });
-    }
-}
+impl_benchmark_test_suite!(
+    Pallet,
+    crate::mock::ExtBuilder::build(),
+    crate::mock::Test,
+);

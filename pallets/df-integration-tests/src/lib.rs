@@ -25,8 +25,7 @@ mod tests {
     use pallet_posts::{Post, PostUpdate, PostExtension, Comment, Error as PostsError};
     use pallet_profiles::{ProfileUpdate, Error as ProfilesError};
     use pallet_profile_follows::Error as ProfileFollowsError;
-    use pallet_reactions::{ReactionId, ReactionKind, PostReactionScores, Error as ReactionsError};
-    use pallet_scores::ScoringAction;
+    use pallet_reactions::{ReactionId, ReactionKind, Error as ReactionsError};
     use pallet_spaces::{SpaceById, SpaceUpdate, Error as SpacesError, SpacesSettings};
     use pallet_space_follows::Error as SpaceFollowsError;
     use pallet_space_ownership::Error as SpaceOwnershipError;
@@ -47,24 +46,23 @@ mod tests {
             NodeBlock = Block,
             UncheckedExtrinsic = UncheckedExtrinsic,
         {
-            System: system::{Module, Call, Config, Storage, Event<T>},
-            Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-            Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-            Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
-            Permissions: pallet_permissions::{Module, Call},
-            Posts: pallet_posts::{Module, Call, Storage, Event<T>},
-            PostHistory: pallet_post_history::{Module, Storage},
-            ProfileFollows: pallet_profile_follows::{Module, Call, Storage, Event<T>},
-            Profiles: pallet_profiles::{Module, Call, Storage, Event<T>},
-            ProfileHistory: pallet_profile_history::{Module, Storage},
-            Reactions: pallet_reactions::{Module, Call, Storage, Event<T>},
-            Roles: pallet_roles::{Module, Call, Storage, Event<T>},
-            Scores: pallet_scores::{Module, Call, Storage, Event<T>},
-            SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
-            SpaceHistory: pallet_space_history::{Module, Storage},
-            SpaceOwnership: pallet_space_ownership::{Module, Call, Storage, Event<T>},
-            Spaces: pallet_spaces::{Module, Call, Storage, Event<T>, Config<T>},
-            Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
+            System: system::{Pallet, Call, Config, Storage, Event<T>},
+            Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+            Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+            Moderation: pallet_moderation::{Pallet, Call, Storage, Event<T>},
+            Permissions: pallet_permissions::{Pallet, Call},
+            Posts: pallet_posts::{Pallet, Call, Storage, Event<T>},
+            PostHistory: pallet_post_history::{Pallet, Storage},
+            ProfileFollows: pallet_profile_follows::{Pallet, Call, Storage, Event<T>},
+            Profiles: pallet_profiles::{Pallet, Call, Storage, Event<T>},
+            ProfileHistory: pallet_profile_history::{Pallet, Storage},
+            Reactions: pallet_reactions::{Pallet, Call, Storage, Event<T>},
+            Roles: pallet_roles::{Pallet, Call, Storage, Event<T>},
+            SpaceFollows: pallet_space_follows::{Pallet, Call, Storage, Event<T>},
+            SpaceHistory: pallet_space_history::{Pallet, Storage},
+            SpaceOwnership: pallet_space_ownership::{Pallet, Call, Storage, Event<T>},
+            Spaces: pallet_spaces::{Pallet, Call, Storage, Event<T>, Config<T>},
+            Utils: pallet_utils::{Pallet, Storage, Event<T>, Config<T>},
         }
     );
 
@@ -95,6 +93,7 @@ mod tests {
         type OnKilledAccount = ();
         type SystemWeightInfo = ();
         type SS58Prefix = ();
+        type OnSetCode = ();
     }
 
     parameter_types! {
@@ -120,6 +119,8 @@ mod tests {
         type AccountStore = System;
         type WeightInfo = ();
         type MaxLocks = ();
+        type MaxReserves = ();
+        type ReserveIdentifier = ();
     }
 
     parameter_types! {
@@ -147,39 +148,27 @@ mod tests {
     impl pallet_posts::Config for TestRuntime {
         type Event = Event;
         type MaxCommentDepth = MaxCommentDepth;
-        type PostScores = Scores;
         type AfterPostUpdated = PostHistory;
         type IsPostBlocked = Moderation;
     }
 
-    parameter_types! {}
-
     impl pallet_post_history::Config for TestRuntime {}
-
-    parameter_types! {}
 
     impl pallet_profile_follows::Config for TestRuntime {
         type Event = Event;
-        type BeforeAccountFollowed = Scores;
-        type BeforeAccountUnfollowed = Scores;
+        type BeforeAccountFollowed = ();
+        type BeforeAccountUnfollowed = ();
     }
-
-    parameter_types! {}
 
     impl pallet_profiles::Config for TestRuntime {
         type Event = Event;
         type AfterProfileUpdated = ProfileHistory;
     }
 
-    parameter_types! {}
-
     impl pallet_profile_history::Config for TestRuntime {}
-
-    parameter_types! {}
 
     impl pallet_reactions::Config for TestRuntime {
         type Event = Event;
-        type PostReactionScores = Scores;
     }
 
     parameter_types! {
@@ -195,45 +184,11 @@ mod tests {
         type IsContentBlocked = Moderation;
     }
 
-    parameter_types! {
-        pub const FollowSpaceActionWeight: i16 = 7;
-        pub const FollowAccountActionWeight: i16 = 3;
-
-        pub const SharePostActionWeight: i16 = 7;
-        pub const UpvotePostActionWeight: i16 = 5;
-        pub const DownvotePostActionWeight: i16 = -3;
-
-        pub const CreateCommentActionWeight: i16 = 5;
-        pub const ShareCommentActionWeight: i16 = 5;
-        pub const UpvoteCommentActionWeight: i16 = 4;
-        pub const DownvoteCommentActionWeight: i16 = -2;
-    }
-
-    impl pallet_scores::Config for TestRuntime {
-        type Event = Event;
-
-        type FollowSpaceActionWeight = FollowSpaceActionWeight;
-        type FollowAccountActionWeight = FollowAccountActionWeight;
-
-        type SharePostActionWeight = SharePostActionWeight;
-        type UpvotePostActionWeight = UpvotePostActionWeight;
-        type DownvotePostActionWeight = DownvotePostActionWeight;
-
-        type CreateCommentActionWeight = CreateCommentActionWeight;
-        type ShareCommentActionWeight = ShareCommentActionWeight;
-        type UpvoteCommentActionWeight = UpvoteCommentActionWeight;
-        type DownvoteCommentActionWeight = DownvoteCommentActionWeight;
-    }
-
-    parameter_types! {}
-
     impl pallet_space_follows::Config for TestRuntime {
         type Event = Event;
-        type BeforeSpaceFollowed = Scores;
-        type BeforeSpaceUnfollowed = Scores;
+        type BeforeSpaceFollowed = ();
+        type BeforeSpaceUnfollowed = ();
     }
-
-    parameter_types! {}
 
     impl pallet_space_ownership::Config for TestRuntime {
         type Event = Event;
@@ -256,8 +211,6 @@ mod tests {
         type IsContentBlocked = Moderation;
         type HandleDeposit = HandleDeposit;
     }
-
-    parameter_types! {}
 
     impl pallet_space_history::Config for TestRuntime {}
 
@@ -535,42 +488,6 @@ mod tests {
 
     fn reaction_downvote() -> ReactionKind {
         ReactionKind::Downvote
-    }
-
-    fn scoring_action_upvote_post() -> ScoringAction {
-        ScoringAction::UpvotePost
-    }
-
-    fn scoring_action_downvote_post() -> ScoringAction {
-        ScoringAction::DownvotePost
-    }
-
-    fn scoring_action_share_post() -> ScoringAction {
-        ScoringAction::SharePost
-    }
-
-    fn scoring_action_create_comment() -> ScoringAction {
-        ScoringAction::CreateComment
-    }
-
-    fn scoring_action_upvote_comment() -> ScoringAction {
-        ScoringAction::UpvoteComment
-    }
-
-    fn scoring_action_downvote_comment() -> ScoringAction {
-        ScoringAction::DownvoteComment
-    }
-
-    fn scoring_action_share_comment() -> ScoringAction {
-        ScoringAction::ShareComment
-    }
-
-    fn scoring_action_follow_space() -> ScoringAction {
-        ScoringAction::FollowSpace
-    }
-
-    fn scoring_action_follow_account() -> ScoringAction {
-        ScoringAction::FollowAccount
     }
 
     fn extension_regular_post() -> PostExtension {
@@ -890,26 +807,6 @@ mod tests {
             origin.unwrap_or_else(|| Origin::signed(ACCOUNT2)),
             account.unwrap_or(ACCOUNT1),
         )
-    }
-
-    fn _score_post_on_reaction_with_id(
-        account: AccountId,
-        post_id: PostId,
-        kind: ReactionKind,
-    ) -> DispatchResult {
-        if let Some(ref mut post) = Posts::post_by_id(post_id) {
-            Scores::score_post_on_reaction(account, post, kind)
-        } else {
-            panic!("Test error. Post\\Comment with specified ID not found.");
-        }
-    }
-
-    fn _score_post_on_reaction(
-        account: AccountId,
-        post: &mut Post<TestRuntime>,
-        kind: ReactionKind,
-    ) -> DispatchResult {
-        Scores::score_post_on_reaction(account, post, kind)
     }
 
     fn _transfer_default_space_ownership() -> DispatchResult {
@@ -1307,7 +1204,6 @@ mod tests {
             assert_eq!(space.posts_count, 0);
             assert_eq!(space.followers_count, 1);
             assert!(SpaceHistory::edit_history(space.id).is_empty());
-            assert_eq!(space.score, 0);
 
             // Check that the handle deposit has been reserved:
             let reserved_balance = Balances::reserved_balance(ACCOUNT1);
@@ -1991,8 +1887,6 @@ mod tests {
             assert_eq!(post.upvotes_count, 0);
             assert_eq!(post.downvotes_count, 0);
 
-            assert_eq!(post.score, 0);
-
             assert!(PostHistory::edit_history(POST1).is_empty());
         });
     }
@@ -2114,13 +2008,11 @@ mod tests {
         let old_space = Spaces::space_by_id(old_space_id).unwrap();
         assert_eq!(old_space.posts_count, 0);
         assert_eq!(old_space.hidden_posts_count, 0);
-        assert_eq!(old_space.score, 0);
 
         // Check that stats on the new space have been increased
         let new_space = Spaces::space_by_id(new_space_id).unwrap();
         assert_eq!(new_space.posts_count, 1);
         assert_eq!(new_space.hidden_posts_count, if post.hidden { 1 } else { 0 });
-        assert_eq!(new_space.score, post.score);
     }
 
     #[test]
@@ -2574,7 +2466,6 @@ mod tests {
             assert_eq!(comment.shares_count, 0);
             assert_eq!(comment.upvotes_count, 0);
             assert_eq!(comment.downvotes_count, 0);
-            assert_eq!(comment.score, 0);
 
             assert!(PostHistory::edit_history(POST2).is_empty());
         });
@@ -2870,465 +2761,6 @@ mod tests {
         });
     }
 
-// Rating system tests
-
-    #[test]
-    fn check_results_of_score_diff_for_action_with_common_values() {
-        ExtBuilder::build().execute_with(|| {
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_upvote_post()), UpvotePostActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_downvote_post()), DownvotePostActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_share_post()), SharePostActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_create_comment()), CreateCommentActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_upvote_comment()), UpvoteCommentActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_downvote_comment()), DownvoteCommentActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_share_comment()), ShareCommentActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_follow_space()), FollowSpaceActionWeight::get() as i16);
-            assert_eq!(Scores::score_diff_for_action(1, scoring_action_follow_account()), FollowAccountActionWeight::get() as i16);
-        });
-    }
-
-    #[test]
-    fn check_results_of_score_diff_for_action_with_random_values() {
-        ExtBuilder::build().execute_with(|| {
-            assert_eq!(Scores::score_diff_for_action(32768, scoring_action_upvote_post()), 80); // 2^15
-            assert_eq!(Scores::score_diff_for_action(32769, scoring_action_upvote_post()), 80); // 2^15 + 1
-            assert_eq!(Scores::score_diff_for_action(65535, scoring_action_upvote_post()), 80); // 2^16 - 1
-            assert_eq!(Scores::score_diff_for_action(65536, scoring_action_upvote_post()), 85); // 2^16
-        });
-    }
-
-//--------------------------------------------------------------------------------------------------
-
-    #[test]
-    fn change_space_score_should_work_for_follow_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_follow_space(
-                Some(Origin::signed(ACCOUNT2)),
-                Some(SPACE1)
-            ));
-
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, FollowSpaceActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + FollowSpaceActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
-        });
-    }
-
-    #[test]
-    fn change_space_score_should_work_for_unfollow_space() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_follow_space(
-                Some(Origin::signed(ACCOUNT2)),
-                Some(SPACE1)
-            ));
-            assert_ok!(_unfollow_space(
-                Some(Origin::signed(ACCOUNT2)),
-                Some(SPACE1)
-            ));
-
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, 0);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
-        });
-    }
-
-    #[test]
-    fn change_space_score_should_work_for_upvote_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(Some(Origin::signed(ACCOUNT2)), None, None)); // ReactionId 1
-
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, UpvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvotePostActionWeight::get() as u32);
-        });
-    }
-
-    #[test]
-    fn change_space_score_should_work_for_downvote_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                Some(reaction_downvote())
-            )); // ReactionId 1
-
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, DownvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-        });
-    }
-
-//--------------------------------------------------------------------------------------------------
-
-    #[test]
-    fn change_post_score_should_work_for_create_comment() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_comment(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None,
-                None
-            )); // PostId 2
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, CreateCommentActionWeight::get() as i32);
-            assert_eq!(Spaces::space_by_id(SPACE1).unwrap().score, CreateCommentActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_create_comment())), Some(CreateCommentActionWeight::get()));
-        });
-    }
-
-    #[test]
-    fn change_post_score_should_work_for_upvote_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None
-            ));
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, UpvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvotePostActionWeight::get() as u32);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_upvote_post())), Some(UpvotePostActionWeight::get()));
-        });
-    }
-
-    #[test]
-    fn change_post_score_should_work_for_downvote_post() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                Some(reaction_downvote())
-            ));
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, DownvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_downvote_post())), Some(DownvotePostActionWeight::get()));
-        });
-    }
-
-    #[test]
-    fn change_post_score_should_for_revert_upvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None
-            ));
-            // ReactionId 1
-            assert_ok!(_delete_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                REACTION1
-            ));
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, 0);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_upvote_post())).is_none());
-        });
-    }
-
-    #[test]
-    fn change_post_score_should_for_revert_downvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                Some(reaction_downvote())
-            ));
-            // ReactionId 1
-            assert_ok!(_delete_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                REACTION1
-            ));
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, 0);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_downvote_post())).is_none());
-        });
-    }
-
-    #[test]
-    fn change_post_score_should_work_for_change_upvote_with_downvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None
-            ));
-            // ReactionId 1
-            assert_ok!(_update_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                REACTION1,
-                Some(reaction_downvote())
-            ));
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, DownvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_upvote_post())).is_none());
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_downvote_post())), Some(DownvotePostActionWeight::get()));
-        });
-    }
-
-    #[test]
-    fn change_post_score_should_work_for_change_downvote_with_upvote() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                Some(reaction_downvote())
-            ));
-            // ReactionId 1
-            assert_ok!(_update_post_reaction(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                REACTION1,
-                None
-            ));
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, UpvotePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + UpvotePostActionWeight::get() as u32);
-            assert!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_downvote_post())).is_none());
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_upvote_post())), Some(UpvotePostActionWeight::get()));
-        });
-    }
-
-//--------------------------------------------------------------------------------------------------
-
-    #[test]
-    fn change_social_account_reputation_should_work_when_max_score_diff_provided() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(Some(Origin::signed(ACCOUNT1)), None, None, None));
-            assert_ok!(Scores::change_social_account_reputation(
-                ACCOUNT1,
-                ACCOUNT2,
-                std::i16::MAX,
-                scoring_action_follow_account())
-            );
-        });
-    }
-
-    #[test]
-    fn change_social_account_reputation_should_work_when_min_score_diff_provided() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(Some(Origin::signed(ACCOUNT1)), None, None, None));
-            assert_ok!(Scores::change_social_account_reputation(
-                ACCOUNT1,
-                ACCOUNT2,
-                std::i16::MIN,
-                scoring_action_follow_account())
-            );
-        });
-    }
-
-    #[test]
-    fn change_social_account_reputation_should_work() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(Some(Origin::signed(ACCOUNT1)), None, None, None));
-            assert_ok!(Scores::change_social_account_reputation(
-                ACCOUNT1,
-                ACCOUNT2,
-                DownvotePostActionWeight::get(),
-                scoring_action_downvote_post())
-            );
-            assert_eq!(Scores::account_reputation_diff_by_account((ACCOUNT2, ACCOUNT1, scoring_action_downvote_post())), Some(0));
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-
-            // To ensure function works correctly, multiply default UpvotePostActionWeight by two
-            assert_ok!(Scores::change_social_account_reputation(
-                ACCOUNT1,
-                ACCOUNT2,
-                UpvotePostActionWeight::get() * 2,
-                scoring_action_upvote_post())
-            );
-
-            assert_eq!(
-                Scores::account_reputation_diff_by_account(
-                    (
-                        ACCOUNT2,
-                        ACCOUNT1,
-                        scoring_action_upvote_post()
-                    )
-                ), Some(UpvotePostActionWeight::get() * 2)
-            );
-
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + (UpvotePostActionWeight::get() * 2) as u32);
-        });
-    }
-
-//--------------------------------------------------------------------------------------------------
-
-    #[test]
-    fn change_comment_score_should_work_for_upvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
-                Some(Origin::signed(ACCOUNT1)),
-                None,
-                None,
-                None
-            ));
-            // PostId 1
-            assert_ok!(_create_comment(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None,
-                None
-            )); // PostId 2
-
-            assert_ok!(_score_post_on_reaction_with_id(
-                ACCOUNT3,
-                POST2,
-                reaction_upvote()
-            ));
-
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, UpvoteCommentActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1 + UpvoteCommentActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT3, POST2, scoring_action_upvote_comment())), Some(UpvoteCommentActionWeight::get()));
-        });
-    }
-
-    #[test]
-    fn change_comment_score_should_work_for_downvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
-                Some(Origin::signed(ACCOUNT1)),
-                None,
-                None,
-                None
-            ));
-            // PostId 1
-            assert_ok!(_create_comment(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None,
-                None
-            )); // PostId 2
-
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_downvote()));
-
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, DownvoteCommentActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT3, POST2, scoring_action_downvote_comment())), Some(DownvoteCommentActionWeight::get()));
-        });
-    }
-
-    #[test]
-    fn change_comment_score_should_for_revert_upvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
-                Some(Origin::signed(ACCOUNT1)),
-                None,
-                None,
-                None
-            ));
-            // PostId 1
-            assert_ok!(_create_comment(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None,
-                None
-            )); // PostId 2
-
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_upvote()));
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_upvote()));
-
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, 0);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT1, POST2, scoring_action_upvote_comment())).is_none());
-        });
-    }
-
-    #[test]
-    fn change_comment_score_should_for_revert_downvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
-                Some(Origin::signed(ACCOUNT1)),
-                None,
-                None,
-                None
-            ));
-            // PostId 1
-            assert_ok!(_create_comment(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None,
-                None
-            )); // PostId 2
-
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_downvote()));
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_downvote()));
-
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, 0);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT1, POST2, scoring_action_downvote_comment())).is_none());
-        });
-    }
-
-    #[test]
-    fn change_comment_score_check_for_cancel_upvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
-                Some(Origin::signed(ACCOUNT1)),
-                None,
-                None,
-                None
-            ));
-            // PostId 1
-            assert_ok!(_create_comment(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None,
-                None
-            )); // PostId 2
-
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_upvote()));
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_downvote()));
-
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, DownvoteCommentActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT3, POST2, scoring_action_upvote_comment())).is_none());
-            assert_eq!(Scores::post_score_by_account((ACCOUNT3, POST2, scoring_action_downvote_comment())), Some(DownvoteCommentActionWeight::get()));
-        });
-    }
-
-    #[test]
-    fn change_comment_score_check_for_cancel_downvote() {
-        ExtBuilder::build_with_space().execute_with(|| {
-            assert_ok!(_create_post(
-                Some(Origin::signed(ACCOUNT1)),
-                None,
-                None,
-                None
-            ));
-            // PostId 1
-            assert_ok!(_create_comment(
-                Some(Origin::signed(ACCOUNT2)),
-                None,
-                None,
-                None
-            )); // PostId 2
-
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_downvote()));
-            assert_ok!(_score_post_on_reaction_with_id(ACCOUNT3, POST2, reaction_upvote()));
-
-            assert_eq!(Posts::post_by_id(POST2).unwrap().score, UpvoteCommentActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + CreateCommentActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT2).unwrap().reputation, 1 + UpvoteCommentActionWeight::get() as u32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT3).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT3, POST2, scoring_action_downvote_comment())).is_none());
-            assert_eq!(Scores::post_score_by_account((ACCOUNT3, POST2, scoring_action_upvote_comment())), Some(UpvoteCommentActionWeight::get()));
-        });
-    }
-
 // Shares tests
 
     #[test]
@@ -3415,45 +2847,6 @@ mod tests {
             assert_eq!(shared_post.space_id, Some(SPACE1));
             assert_eq!(shared_post.created.account, ACCOUNT1);
             assert_eq!(shared_post.extension, extension_shared_post(POST1));
-        });
-    }
-
-    #[test]
-    fn share_post_should_change_score() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_space(
-                Some(Origin::signed(ACCOUNT2)),
-                Some(Some(b"space2_handle".to_vec())),
-                None,
-                None
-            )); // SpaceId 2 by ACCOUNT2
-
-            assert_ok!(_create_post(
-                Some(Origin::signed(ACCOUNT2)),
-                Some(Some(SPACE2)),
-                Some(extension_shared_post(POST1)),
-                None
-            )); // Share PostId 1 on SpaceId 2 by ACCOUNT2
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, SharePostActionWeight::get() as i32);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1 + SharePostActionWeight::get() as u32);
-            assert_eq!(Scores::post_score_by_account((ACCOUNT2, POST1, scoring_action_share_post())), Some(SharePostActionWeight::get()));
-        });
-    }
-
-    #[test]
-    fn share_post_should_not_change_score() {
-        ExtBuilder::build_with_post().execute_with(|| {
-            assert_ok!(_create_post(
-                Some(Origin::signed(ACCOUNT1)),
-                Some(Some(SPACE1)),
-                Some(extension_shared_post(POST1)),
-                None
-            )); // Share PostId
-
-            assert_eq!(Posts::post_by_id(POST1).unwrap().score, 0);
-            assert_eq!(Profiles::social_account_by_id(ACCOUNT1).unwrap().reputation, 1);
-            assert!(Scores::post_score_by_account((ACCOUNT1, POST1, scoring_action_share_post())).is_none());
         });
     }
 

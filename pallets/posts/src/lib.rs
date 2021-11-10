@@ -126,25 +126,9 @@ pub trait Config: system::Config
     /// Max comments depth
     type MaxCommentDepth: Get<u32>;
 
-    type PostScores: PostScores<Self>;
-
     type AfterPostUpdated: AfterPostUpdated<Self>;
 
     type IsPostBlocked: IsPostBlocked<PostId>;
-}
-
-pub trait PostScores<T: Config> {
-    fn score_post_on_new_share(account: T::AccountId, original_post: &mut Post<T>) -> DispatchResult;
-    fn score_root_post_on_new_comment(account: T::AccountId, root_post: &mut Post<T>) -> DispatchResult;
-}
-
-impl<T: Config> PostScores<T> for () {
-    fn score_post_on_new_share(_account: T::AccountId, _original_post: &mut Post<T>) -> DispatchResult {
-        Ok(())
-    }
-    fn score_root_post_on_new_comment(_account: T::AccountId, _root_post: &mut Post<T>) -> DispatchResult {
-        Ok(())
-    }
 }
 
 #[impl_trait_for_tuples::impl_for_tuples(10)]
@@ -307,7 +291,7 @@ decl_module! {
       match extension {
         PostExtension::RegularPost => space.inc_posts(),
         PostExtension::SharedPost(post_id) => Self::create_sharing_post(&creator, new_post_id, post_id, space)?,
-        PostExtension::Comment(comment_ext) => Self::create_comment(&creator, new_post_id, comment_ext, root_post)?,
+        PostExtension::Comment(comment_ext) => Self::create_comment(new_post_id, comment_ext, root_post)?,
       }
 
       if new_post.is_root_post() {

@@ -107,7 +107,7 @@ impl<T: Config> Module<T> {
 
         let mut is_expired = false;
         if let Some(expires_at) = role.expires_at {
-          if expires_at <= <system::Module<T>>::block_number() {
+          if expires_at <= <system::Pallet<T>>::block_number() {
             is_expired = true;
           }
         }
@@ -136,7 +136,7 @@ impl<T: Config> Role<T> {
 
     let mut expires_at: Option<T::BlockNumber> = None;
     if let Some(ttl) = time_to_live {
-      expires_at = Some(ttl + <system::Module<T>>::block_number());
+      expires_at = Some(ttl + <system::Pallet<T>>::block_number());
     }
 
     let new_role = Role::<T> {

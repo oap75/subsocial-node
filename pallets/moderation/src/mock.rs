@@ -32,16 +32,16 @@ frame_support::construct_runtime!(
         NodeBlock = Block,
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
-        System: system::{Module, Call, Config, Storage, Event<T>},
-        Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-        Moderation: moderation::{Module, Call, Storage, Event<T>},
-		Posts: pallet_posts::{Module, Call, Storage, Event<T>},
-        Profiles: pallet_profiles::{Module, Call, Storage, Event<T>},
-		Roles: pallet_roles::{Module, Call, Storage, Event<T>},
-		SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
-		Spaces: pallet_spaces::{Module, Call, Storage, Event<T>, Config<T>},
-        Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
+        System: system::{Pallet, Call, Config, Storage, Event<T>},
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+        Moderation: moderation::{Pallet, Call, Storage, Event<T>},
+		Posts: pallet_posts::{Pallet, Call, Storage, Event<T>},
+        Profiles: pallet_profiles::{Pallet, Call, Storage, Event<T>},
+		Roles: pallet_roles::{Pallet, Call, Storage, Event<T>},
+		SpaceFollows: pallet_space_follows::{Pallet, Call, Storage, Event<T>},
+		Spaces: pallet_spaces::{Pallet, Call, Storage, Event<T>, Config<T>},
+        Utils: pallet_utils::{Pallet, Storage, Event<T>, Config<T>},
     }
 );
 
@@ -72,6 +72,7 @@ impl system::Config for Test {
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
     type SS58Prefix = ();
+    type OnSetCode = ();
 }
 
 parameter_types! {
@@ -109,6 +110,8 @@ impl pallet_balances::Config for Test {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = ();
+    type MaxReserves = ();
+    type ReserveIdentifier = ();
 }
 
 impl pallet_permissions::Config for Test {
@@ -140,7 +143,6 @@ parameter_types! {
 impl pallet_posts::Config for Test {
     type Event = Event;
     type MaxCommentDepth = MaxCommentDepth;
-    type PostScores = ();
     type AfterPostUpdated = ();
     type IsPostBlocked = Moderation;
 }

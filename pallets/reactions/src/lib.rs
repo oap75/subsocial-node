@@ -15,7 +15,7 @@ use sp_std::prelude::*;
 
 use df_traits::moderation::IsAccountBlocked;
 use pallet_permissions::SpacePermission;
-use pallet_posts::{Module as Posts, Post, PostById};
+use pallet_posts::{Module as Posts, PostById};
 use pallet_spaces::Module as Spaces;
 use pallet_utils::{Error as UtilsError, remove_from_vec, WhoAndWhen, PostId};
 
@@ -57,8 +57,6 @@ pub trait Config: system::Config
 {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
-
-    type PostReactionScores: PostReactionScores<Self>;
 }
 
 pub const FIRST_REACTION_ID: u64 = 1;
@@ -85,9 +83,9 @@ decl_event!(
     pub enum Event<T> where
         <T as system::Config>::AccountId,
     {
-        PostReactionCreated(AccountId, PostId, ReactionId),
-        PostReactionUpdated(AccountId, PostId, ReactionId),
-        PostReactionDeleted(AccountId, PostId, ReactionId),
+        PostReactionCreated(AccountId, PostId, ReactionId, ReactionKind),
+        PostReactionUpdated(AccountId, PostId, ReactionId, ReactionKind),
+        PostReactionDeleted(AccountId, PostId, ReactionId, ReactionKind),
     }
 );
 
@@ -141,8 +139,6 @@ decl_module! {
 
       ensure!(T::IsAccountBlocked::is_allowed_account(owner.clone(), space.id), UtilsError::<T>::AccountIsBlocked);
 
-      let reaction_id = Self::insert_new_reaction(owner.clone(), kind);
-
       match kind {
         ReactionKind::Upvote => {
           Spaces::ensure_account_has_space_permission(
@@ -164,16 +160,12 @@ decl_module! {
         }
       }
 
-      if post.is_owner(&owner) {
-        <PostById<T>>::insert(post_id, post.clone());
-      }
-
-      T::PostReactionScores::score_post_on_reaction(owner.clone(), post, kind)?;
-
+      <PostById<T>>::insert(post_id, post.clone());
+      let reaction_id = Self::insert_new_reaction(owner.clone(), kind);
       ReactionIdsByPostId::mutate(post.id, |ids| ids.push(reaction_id));
       <PostReactionIdByAccount<T>>::insert((owner.clone(), post_id), reaction_id);
 
-      Self::deposit_event(RawEvent::PostReactionCreated(owner, post_id, reaction_id));
+      Self::deposit_event(RawEvent::PostReactionCreated(owner, post_id, reaction_id, kind));
       Ok(())
     }
 
@@ -196,7 +188,6 @@ decl_module! {
         ensure!(T::IsAccountBlocked::is_allowed_account(owner.clone(), space_id), UtilsError::<T>::AccountIsBlocked);
       }
 
-      let old_kind = reaction.kind;
       reaction.kind = new_kind;
       reaction.updated = Some(WhoAndWhen::<T>::new(owner.clone()));
 
@@ -211,13 +202,10 @@ decl_module! {
         },
       }
 
-      T::PostReactionScores::score_post_on_reaction(owner.clone(), post, old_kind)?;
-      T::PostReactionScores::score_post_on_reaction(owner.clone(), post, new_kind)?;
-
       <ReactionById<T>>::insert(reaction_id, reaction);
       <PostById<T>>::insert(post_id, post);
 
-      Self::deposit_event(RawEvent::PostReactionUpdated(owner, post_id, reaction_id));
+      Self::deposit_event(RawEvent::PostReactionUpdated(owner, post_id, reaction_id, new_kind));
       Ok(())
     }
 
@@ -244,14 +232,12 @@ decl_module! {
         ReactionKind::Downvote => post.dec_downvotes(),
       }
 
-      T::PostReactionScores::score_post_on_reaction(owner.clone(), post, reaction.kind)?;
-
       <PostById<T>>::insert(post_id, post.clone());
       <ReactionById<T>>::remove(reaction_id);
       ReactionIdsByPostId::mutate(post.id, |ids| remove_from_vec(ids, reaction_id));
       <PostReactionIdByAccount<T>>::remove((owner.clone(), post_id));
 
-      Self::deposit_event(RawEvent::PostReactionDeleted(owner, post_id, reaction_id));
+      Self::deposit_event(RawEvent::PostReactionDeleted(owner, post_id, reaction_id, reaction.kind));
       Ok(())
     }
   }
@@ -259,7 +245,6 @@ decl_module! {
 
 impl<T: Config> Module<T> {
 
-    // FIXME: don't add reaction in storage before the checks in 'create_reaction' are done
     pub fn insert_new_reaction(account: T::AccountId, kind: ReactionKind) -> ReactionId {
         let id = Self::next_reaction_id();
         let reaction: Reaction<T> = Reaction {
@@ -278,16 +263,5 @@ impl<T: Config> Module<T> {
     /// Get `Reaction` by id from the storage or return `ReactionNotFound` error.
     pub fn require_reaction(reaction_id: ReactionId) -> Result<Reaction<T>, DispatchError> {
         Ok(Self::reaction_by_id(reaction_id).ok_or(Error::<T>::ReactionNotFound)?)
-    }
-}
-
-/// Handler that will be called right before the post reaction is toggled.
-pub trait PostReactionScores<T: Config> {
-    fn score_post_on_reaction(actor: T::AccountId, post: &mut Post<T>, reaction_kind: ReactionKind) -> DispatchResult;
-}
-
-impl<T: Config> PostReactionScores<T> for () {
-    fn score_post_on_reaction(_actor: T::AccountId, _post: &mut Post<T>, _reaction_kind: ReactionKind) -> DispatchResult {
-        Ok(())
     }
 }

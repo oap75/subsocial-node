@@ -25,5 +25,5 @@ pallet-permissions = { default-features = false, path = '../permissions' }
 pallet-utils = { default-features = false, path = '../utils' }
 
 # Substrate dependencies
-frame-support = { default-features = false, version = '3.0.0' }
-sp-runtime = { default-features = false, version = '3.0.0' }
+frame-support = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10', default-features = false }
+sp-runtime = { git = 'https://github.com/paritytech/substrate', branch = 'polkadot-v0.9.10', default-features = false }

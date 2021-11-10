@@ -9,8 +9,8 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use sp_std::{
-	prelude::*,
-	collections::btree_map::BTreeMap,
+    prelude::*,
+    collections::btree_map::BTreeMap,
 };
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 pub use subsocial_primitives::{AccountId, Signature, Balance, Index};
@@ -38,7 +38,11 @@ pub use pallet_balances::Call as BalancesCall;
 pub use sp_runtime::{Permill, Perbill};
 pub use frame_support::{
     construct_runtime, parameter_types, StorageValue,
-    traits::{KeyOwnerProofSystem, Randomness, Currency, Imbalance, OnUnbalanced, Filter},
+    traits::{
+        KeyOwnerProofSystem, Randomness, Currency,
+        Imbalance, OnUnbalanced, Contains,
+        OnRuntimeUpgrade, StorageInfo,
+    },
     weights::{
         Weight, IdentityFee, DispatchClass,
         constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
@@ -55,9 +59,9 @@ use pallet_permissions::SpacePermission;
 use pallet_posts::rpc::{FlatPost, FlatPostKind, RepliesByPostId};
 use pallet_profiles::rpc::FlatSocialAccount;
 use pallet_reactions::{
-	ReactionId,
-	ReactionKind,
-	rpc::FlatReaction,
+    ReactionId,
+    ReactionKind,
+    rpc::FlatReaction,
 };
 use pallet_spaces::rpc::FlatSpace;
 use pallet_utils::{SpaceId, PostId, DEFAULT_MIN_HANDLE_LEN, DEFAULT_MAX_HANDLE_LEN};
@@ -90,10 +94,12 @@ pub mod opaque {
 }
 
 /// This runtime version.
+#[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("subsocial"),
 	impl_name: create_runtime_str!("dappforce-subsocial"),
 	authoring_version: 0,
+    // TODO: don't forget to apply `MigratePalletVersionToStorageVersion` on the next upgrade.
 	spec_version: 14,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
@@ -122,7 +128,7 @@ impl OnUnbalanced<NegativeImbalance> for DealWithFees {
     }
 }
 
-/// We assume that ~10% of the block weight is consumed by `on_initalize` handlers.
+/// We assume that ~10% of the block weight is consumed by `on_initialize` handlers.
 /// This is used to limit the maximal weight of a single extrinsic.
 const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
@@ -206,10 +212,13 @@ impl frame_system::Config for Runtime {
     type SystemWeightInfo = frame_system::weights::SubstrateWeight<Runtime>;
     /// This is used as an identifier of the chain. 42 is the generic substrate prefix.
     type SS58Prefix = SS58Prefix;
+    /// The set code logic, just the default since we're not a parachain.
+    type OnSetCode = ();
 }
 
 impl pallet_aura::Config for Runtime {
     type AuthorityId = AuraId;
+    type DisabledValidators = ();
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -246,6 +255,7 @@ impl pallet_timestamp::Config for Runtime {
 parameter_types! {
 	pub const ExistentialDeposit: u128 = 10 * CENTS;
 	pub const MaxLocks: u32 = 50;
+	pub const MaxReserves: u32 = 50;
 }
 
 impl pallet_balances::Config for Runtime {
@@ -258,6 +268,8 @@ impl pallet_balances::Config for Runtime {
     type AccountStore = System;
     type WeightInfo = ();
     type MaxLocks = MaxLocks;
+    type MaxReserves = MaxReserves;
+    type ReserveIdentifier = [u8; 8];
 }
 
 parameter_types! {
@@ -298,6 +310,8 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = ();
 }
 
+impl pallet_randomness_collective_flip::Config for Runtime {}
+
 // Subsocial custom pallets go below:
 // ------------------------------------------------------------------------------------------------
 
@@ -326,39 +340,27 @@ parameter_types! {
 impl pallet_posts::Config for Runtime {
 	type Event = Event;
 	type MaxCommentDepth = MaxCommentDepth;
-	type PostScores = Scores;
 	type AfterPostUpdated = PostHistory;
 	type IsPostBlocked = ()/*Moderation*/;
 }
 
-parameter_types! {}
-
 impl pallet_post_history::Config for Runtime {}
-
-parameter_types! {}
 
 impl pallet_profile_follows::Config for Runtime {
 	type Event = Event;
-	type BeforeAccountFollowed = Scores;
-	type BeforeAccountUnfollowed = Scores;
+	type BeforeAccountFollowed = ();
+	type BeforeAccountUnfollowed = ();
 }
-
-parameter_types! {}
 
 impl pallet_profiles::Config for Runtime {
 	type Event = Event;
 	type AfterProfileUpdated = ProfileHistory;
 }
 
-parameter_types! {}
-
 impl pallet_profile_history::Config for Runtime {}
-
-parameter_types! {}
 
 impl pallet_reactions::Config for Runtime {
 	type Event = Event;
-	type PostReactionScores = Scores;
 }
 
 parameter_types! {
@@ -374,45 +376,11 @@ impl pallet_roles::Config for Runtime {
 	type IsContentBlocked = ()/*Moderation*/;
 }
 
-parameter_types! {
-  pub const FollowSpaceActionWeight: i16 = 7;
-  pub const FollowAccountActionWeight: i16 = 3;
-
-  pub const SharePostActionWeight: i16 = 7;
-  pub const UpvotePostActionWeight: i16 = 5;
-  pub const DownvotePostActionWeight: i16 = -3;
-
-  pub const CreateCommentActionWeight: i16 = 5;
-  pub const ShareCommentActionWeight: i16 = 5;
-  pub const UpvoteCommentActionWeight: i16 = 4;
-  pub const DownvoteCommentActionWeight: i16 = -2;
-}
-
-impl pallet_scores::Config for Runtime {
-	type Event = Event;
-
-	type FollowSpaceActionWeight = FollowSpaceActionWeight;
-	type FollowAccountActionWeight = FollowAccountActionWeight;
-
-	type SharePostActionWeight = SharePostActionWeight;
-	type UpvotePostActionWeight = UpvotePostActionWeight;
-	type DownvotePostActionWeight = DownvotePostActionWeight;
-
-	type CreateCommentActionWeight = CreateCommentActionWeight;
-	type ShareCommentActionWeight = ShareCommentActionWeight;
-	type UpvoteCommentActionWeight = UpvoteCommentActionWeight;
-	type DownvoteCommentActionWeight = DownvoteCommentActionWeight;
-}
-
-parameter_types! {}
-
 impl pallet_space_follows::Config for Runtime {
 	type Event = Event;
-	type BeforeSpaceFollowed = Scores;
-	type BeforeSpaceUnfollowed = Scores;
+	type BeforeSpaceFollowed = ();
+	type BeforeSpaceUnfollowed = ();
 }
-
-parameter_types! {}
 
 impl pallet_space_ownership::Config for Runtime {
 	type Event = Event;
@@ -447,13 +415,11 @@ impl pallet_dotsama_claims::Config for Runtime {
     type WeightInfo = pallet_dotsama_claims::weights::SubstrateWeight<Runtime>;
 }
 
-parameter_types! {}
-
 impl pallet_space_history::Config for Runtime {}
 
 pub struct BaseFilter;
-impl Filter<Call> for BaseFilter {
-    fn filter(c: &Call) -> bool {
+impl Contains<Call> for BaseFilter {
+    fn contains(c: &Call) -> bool {
         let is_set_balance = matches!(c, Call::Balances(pallet_balances::Call::set_balance(..)));
         let is_force_transfer = matches!(c, Call::Balances(pallet_balances::Call::force_transfer(..)));
         match *c {
@@ -463,66 +429,14 @@ impl Filter<Call> for BaseFilter {
     }
 }
 
-/*
-parameter_types! {
-	pub const MaxSessionKeysPerAccount: u16 = 10;
-	pub const BaseSessionKeyBond: Balance = 1 * DOLLARS;
-}
-
-pub struct SessionKeysProxyFilter;
-impl Default for SessionKeysProxyFilter { fn default() -> Self { Self } }
-impl Filter<Call> for SessionKeysProxyFilter {
-	fn filter(c: &Call) -> bool {
-		match *c {
-			Call::SpaceFollows(..) => true,
-			Call::ProfileFollows(..) => true,
-			Call::Posts(..) => true,
-			Call::Reactions(..) => true,
-			_ => false,
-		}
-	}
-}
-
-impl pallet_session_keys::Config for Runtime {
-	type Event = Event;
-	type Call = Call;
-	type MaxSessionKeysPerAccount = MaxSessionKeysPerAccount;
-	type BaseFilter = SessionKeysProxyFilter;
-	type BaseSessionKeyBond = BaseSessionKeyBond;
-}
-
-impl pallet_donations::Config for Runtime {
-	type Event = Event;
-}
-
-parameter_types! {
-	pub const DefaultAutoblockThreshold: u16 = 20;
+/*parameter_types! {
+    pub const DefaultAutoblockThreshold: u16 = 20;
 }
 
 impl pallet_moderation::Config for Runtime {
-	type Event = Event;
-	type DefaultAutoblockThreshold = DefaultAutoblockThreshold;
-}
-
-parameter_types! {
-	pub const DailyPeriodInBlocks: BlockNumber = DAYS;
-	pub const WeeklyPeriodInBlocks: BlockNumber = DAYS * 7;
-	pub const MonthlyPeriodInBlocks: BlockNumber = DAYS * 30;
-	pub const QuarterlyPeriodInBlocks: BlockNumber = DAYS * 30 * 3;
-	pub const YearlyPeriodInBlocks: BlockNumber = DAYS * 365;
-}
-
-impl pallet_subscriptions::Config for Runtime {
-	type Event = Event;
-	type Subscription = Call;
-	type Scheduler = Scheduler;
-	type DailyPeriodInBlocks = DailyPeriodInBlocks;
-	type WeeklyPeriodInBlocks = WeeklyPeriodInBlocks;
-	type MonthlyPeriodInBlocks = MonthlyPeriodInBlocks;
-	type QuarterlyPeriodInBlocks = QuarterlyPeriodInBlocks;
-	type YearlyPeriodInBlocks = YearlyPeriodInBlocks;
-}
-*/
+    type Event = Event;
+    type DefaultAutoblockThreshold = DefaultAutoblockThreshold;
+}*/
 
 impl pallet_faucets::Config for Runtime {
 	type Event = Event;
@@ -530,48 +444,44 @@ impl pallet_faucets::Config for Runtime {
 }
 
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
-	{
-		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
-		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
-		Aura: pallet_aura::{Module, Config<T>},
-		Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
-		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-		TransactionPayment: pallet_transaction_payment::{Module, Storage},
-		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
-		Scheduler: pallet_scheduler::{Module, Call, Storage, Event<T>},
-		Utility: pallet_utility::{Module, Call, Event},
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = opaque::Block,
+        UncheckedExtrinsic = UncheckedExtrinsic
+    {
+		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Pallet, Storage},
+		Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
+		Aura: pallet_aura::{Pallet, Config<T>},
+		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
+		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
+		Scheduler: pallet_scheduler::{Pallet, Call, Storage, Event<T>},
+		Utility: pallet_utility::{Pallet, Call, Event},
 
 		// Subsocial custom pallets:
 
-		Permissions: pallet_permissions::{Module, Call},
-		Posts: pallet_posts::{Module, Call, Storage, Event<T>},
-		PostHistory: pallet_post_history::{Module, Storage},
-		ProfileFollows: pallet_profile_follows::{Module, Call, Storage, Event<T>},
-		Profiles: pallet_profiles::{Module, Call, Storage, Event<T>},
-		ProfileHistory: pallet_profile_history::{Module, Storage},
-		Reactions: pallet_reactions::{Module, Call, Storage, Event<T>},
-		Roles: pallet_roles::{Module, Call, Storage, Event<T>},
-		Scores: pallet_scores::{Module, Call, Storage, Event<T>},
-		SpaceFollows: pallet_space_follows::{Module, Call, Storage, Event<T>},
-		SpaceHistory: pallet_space_history::{Module, Storage},
-		SpaceOwnership: pallet_space_ownership::{Module, Call, Storage, Event<T>},
-		Spaces: pallet_spaces::{Module, Call, Storage, Event<T>, Config<T>},
-		Utils: pallet_utils::{Module, Storage, Event<T>, Config<T>},
+		Permissions: pallet_permissions::{Pallet, Call},
+		Posts: pallet_posts::{Pallet, Call, Storage, Event<T>},
+		PostHistory: pallet_post_history::{Pallet, Storage},
+		ProfileFollows: pallet_profile_follows::{Pallet, Call, Storage, Event<T>},
+		Profiles: pallet_profiles::{Pallet, Call, Storage, Event<T>},
+		ProfileHistory: pallet_profile_history::{Pallet, Storage},
+		Reactions: pallet_reactions::{Pallet, Call, Storage, Event<T>},
+		Roles: pallet_roles::{Pallet, Call, Storage, Event<T>},
+		SpaceFollows: pallet_space_follows::{Pallet, Call, Storage, Event<T>},
+		SpaceHistory: pallet_space_history::{Pallet, Storage},
+		SpaceOwnership: pallet_space_ownership::{Pallet, Call, Storage, Event<T>},
+		Spaces: pallet_spaces::{Pallet, Call, Storage, Event<T>, Config<T>},
+		Utils: pallet_utils::{Pallet, Storage, Event<T>, Config<T>},
 
 		// New experimental pallets. Not recommended to use in production yet.
 
-		Faucets: pallet_faucets::{Module, Call, Storage, Event<T>},
-		DotsamaClaims: pallet_dotsama_claims::{Module, Call, Storage, Event<T>},
-		// SessionKeys: pallet_session_keys::{Module, Call, Storage, Event<T>},
-		// Moderation: pallet_moderation::{Module, Call, Storage, Event<T>},
-		// Donations: pallet_donations::{Module, Call, Storage, Event<T>},
-		// Subscriptions: pallet_subscriptions::{Module, Call, Storage, Event<T>},
-	}
+		Faucets: pallet_faucets::{Pallet, Call, Storage, Event<T>},
+		DotsamaClaims: pallet_dotsama_claims::{Pallet, Call, Storage, Event<T>},
+		// Moderation: pallet_moderation::{Pallet, Call, Storage, Event<T>},
+    }
 );
 
 /// The address format for describing accounts.
@@ -580,8 +490,6 @@ pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-/// A Block signed with a Justification
-pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 /// The SignedExtension to the basic transaction logic.
@@ -605,8 +513,21 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    AllModules,
+    AllPallets,
+    // TODO: uncomment on the next runtime upgrade after Substrate migrations.
+    // MigratePalletVersionToStorageVersion,
 >;
+
+/// Migrate from `PalletVersion` to the new `StorageVersion`
+pub struct MigratePalletVersionToStorageVersion;
+
+impl OnRuntimeUpgrade for MigratePalletVersionToStorageVersion {
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+        frame_support::migrations::migrate_from_pallet_version_to_storage_version::<AllPalletsWithSystem>(
+            &RocksDbWeight::get()
+        )
+    }
+}
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -615,7 +536,7 @@ impl_runtime_apis! {
 		}
 
 		fn execute_block(block: Block) {
-			Executive::execute_block(block)
+			Executive::execute_block(block);
 		}
 
 		fn initialize_block(header: &<Block as BlockT>::Header) {
@@ -638,8 +559,7 @@ impl_runtime_apis! {
 			Executive::finalize_block()
 		}
 
-		fn inherent_extrinsics(data: sp_inherents::InherentData) ->
-			Vec<<Block as BlockT>::Extrinsic> {
+		fn inherent_extrinsics(data: sp_inherents::InherentData) -> Vec<<Block as BlockT>::Extrinsic> {
 			data.create_extrinsics()
 		}
 
@@ -649,18 +569,15 @@ impl_runtime_apis! {
 		) -> sp_inherents::CheckInherentsResult {
 			data.check_extrinsics(&block)
 		}
-
-		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed()
-		}
 	}
 
 	impl sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
 		fn validate_transaction(
 			source: TransactionSource,
 			tx: <Block as BlockT>::Extrinsic,
+			block_hash: <Block as BlockT>::Hash,
 		) -> TransactionValidity {
-			Executive::validate_transaction(source, tx)
+			Executive::validate_transaction(source, tx, block_hash)
 		}
 	}
 
@@ -671,8 +588,8 @@ impl_runtime_apis! {
 	}
 
 	impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
-		fn slot_duration() -> u64 {
-			Aura::slot_duration()
+		fn slot_duration() -> sp_consensus_aura::SlotDuration {
+			sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
 		}
 
 		fn authorities() -> Vec<AuraId> {
@@ -695,6 +612,10 @@ impl_runtime_apis! {
 	impl fg_primitives::GrandpaApi<Block> for Runtime {
 		fn grandpa_authorities() -> GrandpaAuthorityList {
 			Grandpa::grandpa_authorities()
+		}
+
+		fn current_set_id() -> fg_primitives::SetId {
+			Grandpa::current_set_id()
 		}
 
 		fn submit_report_equivocation_unsigned_extrinsic(
@@ -741,30 +662,57 @@ impl_runtime_apis! {
 
 	#[cfg(feature = "runtime-benchmarks")]
 	impl frame_benchmarking::Benchmark<Block> for Runtime {
+		fn benchmark_metadata(_extra: bool) -> (
+			Vec<frame_benchmarking::BenchmarkList>,
+			Vec<frame_support::traits::StorageInfo>,
+		) {
+			/*use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
+			use frame_support::traits::StorageInfoTrait;
+			use frame_system_benchmarking::Pallet as SystemBench;
+
+			let mut list = Vec::<BenchmarkList>::new();
+
+			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+			list_benchmark!(list, extra, pallet_balances, Balances);
+			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+            // list_benchmark!(list, extra, pallet_permissions, Permissions);
+			// list_benchmark!(list, extra, pallet_posts, Posts);
+			// list_benchmark!(list, extra, pallet_profile_follows, DotsamaClaims);
+			// list_benchmark!(list, extra, pallet_profiles, Profiles);
+			// list_benchmark!(list, extra, pallet_reactions, Reactions);
+			// list_benchmark!(list, extra, pallet_roles, Roles);
+			// list_benchmark!(list, extra, pallet_scores, Scores);
+			// list_benchmark!(list, extra, pallet_space_follows, SpaceFollows);
+			// list_benchmark!(list, extra, pallet_space_ownership, SpaceOwnership);
+			// list_benchmark!(list, extra, pallet_spaces, Spaces);
+			// list_benchmark!(list, extra, pallet_faucets, Faucets);
+			list_benchmark!(list, extra, pallet_dotsama_claims, DotsamaClaims);
+
+			let storage_info = AllPalletsWithSystem::storage_info();
+
+			return (list, storage_info)*/
+            todo!()
+		}
+
 		fn dispatch_benchmark(
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
 
-			use frame_system_benchmarking::Module as SystemBench;
+			use frame_system_benchmarking::Pallet as SystemBench;
 			impl frame_system_benchmarking::Config for Runtime {}
 
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
-				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac")
-					.to_vec().into(),
+				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec().into(),
 				// Total Issuance
-				hex_literal::hex!("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80")
-					.to_vec().into(),
+				hex_literal::hex!("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80").to_vec().into(),
 				// Execution Phase
-				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a")
-					.to_vec().into(),
+				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a").to_vec().into(),
 				// Event Count
-				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850")
-					.to_vec().into(),
+				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850").to_vec().into(),
 				// System Events
-				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
-					.to_vec().into(),
+				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7").to_vec().into(),
 			];
 
 			let mut batches = Vec::<BenchmarkBatch>::new();
