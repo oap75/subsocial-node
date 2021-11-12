@@ -99,11 +99,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	spec_name: create_runtime_str!("subsocial"),
 	impl_name: create_runtime_str!("dappforce-subsocial"),
 	authoring_version: 0,
-    // TODO: don't forget to apply `MigratePalletVersionToStorageVersion` on the next upgrade.
-	spec_version: 14,
+	spec_version: 15,
 	impl_version: 0,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 2,
+	transaction_version: 3,
 };
 
 /// The version information used to identify this runtime when compiled natively.
@@ -514,9 +513,33 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPallets,
-    // TODO: uncomment on the next runtime upgrade after Substrate migrations.
-    // MigratePalletVersionToStorageVersion,
+    (MigratePalletVersionToStorageVersion, GrandpaStoragePrefixMigration),
 >;
+
+pub struct GrandpaStoragePrefixMigration;
+impl frame_support::traits::OnRuntimeUpgrade for GrandpaStoragePrefixMigration {
+    fn on_runtime_upgrade() -> frame_support::weights::Weight {
+        use frame_support::traits::PalletInfo;
+        let name = <Runtime as frame_system::Config>::PalletInfo::name::<Grandpa>()
+            .expect("grandpa is part of pallets in construct_runtime, so it has a name; qed");
+        pallet_grandpa::migrations::v4::migrate::<Runtime, &str>(name)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade() -> Result<(), &'static str> {
+        use frame_support::traits::PalletInfo;
+        let name = <Runtime as frame_system::Config>::PalletInfo::name::<Grandpa>()
+            .expect("grandpa is part of pallets in construct_runtime, so it has a name; qed");
+        pallet_grandpa::migrations::v4::pre_migration::<Runtime, &str>(name);
+        Ok(())
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade() -> Result<(), &'static str> {
+        pallet_grandpa::migrations::v4::post_migration::<Grandpa>();
+        Ok(())
+    }
+}
 
 /// Migrate from `PalletVersion` to the new `StorageVersion`
 pub struct MigratePalletVersionToStorageVersion;
