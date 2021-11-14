@@ -207,6 +207,9 @@
     "hidden": "Option<bool>",
     "permissions": "Option<Option<SpacePermissions>>"
   },
+  "SpaceSettings": {
+    "handles_enabled": "bool"
+  },
   "SpaceForRoles": {
     "owner": "AccountId",
     "permissions": "Option<SpacePermissions>"
