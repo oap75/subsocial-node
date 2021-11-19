@@ -19,12 +19,14 @@
 
     "permissions": "Option<SpacePermissions>"
   },
-
   "SpaceUpdate": {
     "parent_id": "Option<Option<SpaceId>>",
     "handle": "Option<Option<Text>>",
     "content": "Option<Content>",
     "hidden": "Option<bool>",
     "permissions": "Option<Option<SpacePermissions>>"
+  },
+  "SpaceSettings": {
+    "handles_enabled": "bool"
   }
 }
