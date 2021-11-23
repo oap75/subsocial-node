@@ -630,8 +630,6 @@ impl<T: Config> Module<T> {
         space: &Space<T>,
         maybe_new_handle: Option<Option<Vec<u8>>>,
     ) -> Result<bool, DispatchError> {
-        Self::ensure_handles_enabled()?;
-
         let mut is_handle_updated = false;
         if let Some(new_handle_opt) = maybe_new_handle {
 
