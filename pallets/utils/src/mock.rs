@@ -42,6 +42,7 @@ impl system::Config for Test {
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
+    type Call = Call;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
@@ -75,6 +76,7 @@ parameter_types! {
 }
 impl pallet_balances::Config for Test {
     type Balance = u64;
+    type Event = Event;
     type DustRemoval = ();
     type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;

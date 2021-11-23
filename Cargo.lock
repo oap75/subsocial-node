@@ -18,7 +18,7 @@ version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a55f82cfe485775d02112886f4169bde0c5894d75e79ead7eafe7e40a25e45f7"
 dependencies = [
- "gimli 0.23.0",
+ "gimli",
 ]
 
 [[package]]
@@ -1594,7 +1594,7 @@ dependencies = [
  "linregress",
  "log",
  "parity-scale-codec",
- "paste",
+ "paste 1.0.4",
  "sp-api",
  "sp-io",
  "sp-runtime",
@@ -1667,7 +1667,7 @@ dependencies = [
  "log",
  "once_cell",
  "parity-scale-codec",
- "paste",
+ "paste 1.0.4",
  "serde",
  "smallvec 1.6.1",
  "sp-arithmetic",
@@ -1985,12 +1985,11 @@ dependencies = [
 
 [[package]]
 name = "generic-array"
-version = "0.14.4"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "501466ecc8a30d1d3b7fc9229b122b2ce8ed6e9d9223f1138d4babb253e51817"
+checksum = "0ed1e761351b56f54eb9dcd0cfaca9fd0daecf93918e1cfc01c8a3d26ee7adcd"
 dependencies = [
  "typenum",
- "version_check",
 ]
 
 [[package]]
@@ -4006,6 +4005,7 @@ dependencies = [
 name = "pallet-faucets"
 version = "0.7.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -5036,7 +5036,7 @@ dependencies = [
  "prost",
  "prost-types",
  "tempfile",
- "which",
+ "which 4.0.2",
 ]
 
 [[package]]
@@ -5739,6 +5739,9 @@ dependencies = [
  "impl-trait-for-tuples 0.2.1",
  "parity-scale-codec",
  "sc-chain-spec-derive",
+ "sc-consensus-babe",
+ "sc-consensus-epochs",
+ "sc-finality-grandpa",
  "sc-network",
  "sc-telemetry",
  "serde",
@@ -6660,6 +6663,7 @@ dependencies = [
  "merlin",
  "rand 0.7.3",
  "rand_core 0.5.1",
+ "serde",
  "sha2 0.8.2",
  "subtle 2.4.0",
  "zeroize",
@@ -6911,15 +6915,12 @@ dependencies = [
 name = "slab"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
-
-[[package]]
-name = "slog"
-version = "2.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8347046d4ebd943127157b94d63abb990fcf729dc4e9978927fdf4ac3c998d06"
+checksum = "fb931b1367faadea6b1ab1c306a860ec17aaa5fa39f367d0c744e69d971a1fb2"
 dependencies = [
- "erased-serde",
+ "approx",
+ "num-complex",
+ "num-traits",
+ "paste 0.1.18",
 ]
 
 [[package]]
@@ -7383,7 +7384,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "parity-util-mem",
- "paste",
+ "paste 1.0.4",
  "rand 0.7.3",
  "serde",
  "sp-application-crypto",
@@ -7859,6 +7860,7 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "funty",
  "hex-literal",
  "pallet-aura",
  "pallet-balances",

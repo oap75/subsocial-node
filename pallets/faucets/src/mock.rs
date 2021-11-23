@@ -43,10 +43,10 @@ impl system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type Origin = Origin;
-    type Call = Call;
     type Index = u64;
     type BlockNumber = BlockNumber;
     type Hash = H256;
+    type Call = Call;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
