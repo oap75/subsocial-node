@@ -11,6 +11,9 @@ mod tests;
 #[cfg(test)]
 mod mock;
 
+#[cfg(test)]
+use rstest_reuse;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 mod weights;
@@ -48,7 +51,7 @@ pub mod pallet {
 
     /// Information about a parachain event.
     #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, TypeInfo)]
-    pub struct ParachainEvent {
+    pub struct ProcessedEventInfo {
         /// The parachain block number at which the event was found.
         pub block_number: ParachainBlockNumber,
 
@@ -89,19 +92,19 @@ pub mod pallet {
     /// Stores information about last processed event on the parachain.
     #[pallet::storage]
     #[pallet::getter(fn last_processed_parachain_event)]
-    pub type LastProcessedParachainEvent<T: Config> = StorageValue<_, ParachainEvent>;
+    pub type LastProcessedParachainEvent<T: Config> = StorageValue<_, ProcessedEventInfo>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub (super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Locked information changed for an account. [who]
-        LockedInfoSet(T::AccountId),
+        /// Locked information changed for an account.
+        LockedInfoSet { who: T::AccountId },
 
-        /// Locked information is cleared for an account. [who]
-        LockedInfoCleared(T::AccountId),
+        /// Locked information is cleared for an account.
+        LockedInfoCleared { who: T::AccountId },
 
         /// Last processed event have been set.
-        LastProcessedEventSet(ParachainEvent),
+        LastProcessedEventSet { event: ProcessedEventInfo },
     }
     
     #[pallet::call]
@@ -114,13 +117,13 @@ pub mod pallet {
         ))]
         pub fn set_last_processed_parachain_event(
             origin: OriginFor<T>,
-            last_processed_event_info: ParachainEvent,
+            last_processed_event_info: ProcessedEventInfo,
         ) -> DispatchResultWithPostInfo {
             let _ = T::OracleOrigin::ensure_origin(origin)?;
 
             <LastProcessedParachainEvent<T>>::put(last_processed_event_info.clone());
 
-            Self::deposit_event(Event::LastProcessedEventSet(last_processed_event_info));
+            Self::deposit_event(Event::LastProcessedEventSet { event: last_processed_event_info });
 
             Ok(Pays::No.into())
         }
@@ -140,7 +143,7 @@ pub mod pallet {
 
             <LockedInfoByAccount<T>>::insert(account.clone(), locked_info);
 
-            Self::deposit_event(Event::LockedInfoSet(account));
+            Self::deposit_event(Event::LockedInfoSet { who: account });
 
             // If the call did succeed, don't charge the caller
             Ok(Pays::No.into())
@@ -160,7 +163,7 @@ pub mod pallet {
 
             <LockedInfoByAccount<T>>::remove(account.clone());
 
-            Self::deposit_event(Event::LockedInfoCleared(account));
+            Self::deposit_event(Event::LockedInfoCleared { who: account });
 
             // If the call did succeed, don't charge the caller
             Ok(Pays::No.into())
