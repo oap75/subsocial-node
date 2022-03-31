@@ -70,6 +70,7 @@ mod free_calls;
 
 use subsocial_primitives::{currency::*, time::*};
 use pallet_free_calls::config::WindowConfig;
+use pallet_free_calls::quota_strategy::FreeCallsCalculationStrategy;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -340,7 +341,7 @@ impl pallet_utils::Config for Runtime {
 }
 
 use pallet_permissions::default_permissions::DefaultSpacePermissions;
-use crate::free_calls::{FreeCallsCalculationStrategy, FreeCallsFilter, FREE_CALLS_WINDOWS_CONFIGS};
+use crate::free_calls::{FreeCallsFilter, FREE_CALLS_WINDOWS_CONFIGS};
 
 impl pallet_permissions::Config for Runtime {
 	type DefaultSpacePermissions = DefaultSpacePermissions;
@@ -452,7 +453,7 @@ impl pallet_free_calls::Config for Runtime {
     type WindowsConfigs = WindowsConfigs;
     type CallFilter = FreeCallsFilter;
     type WeightInfo = ();
-    type MaxQuotaCalculationStrategy = FreeCallsCalculationStrategy;
+    type MaxQuotaCalculationStrategy = FreeCallsCalculationStrategy<BlockNumber, Balance>;
 }
 
 impl pallet_locker_mirror::Config for Runtime {

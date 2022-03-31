@@ -13,7 +13,7 @@ use frame_support::{
 use frame_support::traits::{Contains};
 use frame_system as system;
 use frame_system::{EnsureRoot};
-use pallet_locker_mirror::{LockedInfoOf};
+use pallet_locker_mirror::{BalanceOf, LockedInfoOf};
 use crate::config::WindowConfig;
 use crate::max_quota_percentage;
 use crate::quota::NumberOfCalls;
@@ -138,7 +138,7 @@ impl Contains<Call> for TestCallFilter {
 }
 
 pub struct TestQuotaCalculation;
-impl pallet_free_calls::MaxQuotaCalculationStrategy<Test> for TestQuotaCalculation {
+impl pallet_free_calls::quota_strategy::MaxQuotaCalculationStrategy<<Test as frame_system::Config>::BlockNumber, BalanceOf<Test>> for TestQuotaCalculation {
     fn calculate(
         current_block: <Test as frame_system::Config>::BlockNumber,
         locked_info: Option<LockedInfoOf<Test>>
