@@ -33,6 +33,7 @@ mod benchmarking;
 mod weights;
 pub mod quota;
 pub mod config;
+pub mod quota_strategy;
 
 pub use weights::WeightInfo;
 use frame_support::traits::Contains;
@@ -51,11 +52,12 @@ pub mod pallet {
     use sp_std::boxed::Box;
     use sp_std::cmp::max;
     use sp_std::vec::Vec;
-    use pallet_locker_mirror::{LockedInfoByAccount, LockedInfoOf};
+    use pallet_locker_mirror::{BalanceOf, LockedInfo, LockedInfoByAccount, LockedInfoOf};
     use pallet_utils::bool_to_option;
     use scale_info::TypeInfo;
     use crate::config::{WindowConfig, WindowsConfigSize};
     use crate::quota::{calculate_quota, FractionOfMaxQuota, NumberOfCalls};
+    use crate::quota_strategy::MaxQuotaCalculationStrategy;
     use crate::WeightInfo;
 
     /// A `BoundedVec` that can hold a list of `ConsumerStats` objects bounded by the size of WindowConfigs.
@@ -109,7 +111,7 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
 
         /// A calculation strategy to convert locked tokens info to a max quota per largest window.
-        type MaxQuotaCalculationStrategy: MaxQuotaCalculationStrategy<Self>;
+        type MaxQuotaCalculationStrategy: MaxQuotaCalculationStrategy<Self::BlockNumber, BalanceOf<Self>>;
     }
 
     /// Keeps track of each windows usage for each consumer.
@@ -271,11 +273,6 @@ pub mod pallet {
                 new_stats,
             );
         }
-    }
-
-
-    pub trait MaxQuotaCalculationStrategy<T: Config> {
-        fn calculate(current_block: T::BlockNumber, locked_info: Option<LockedInfoOf<T>>) -> Option<NumberOfCalls>;
     }
 }
 
