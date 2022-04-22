@@ -8,11 +8,28 @@ on:
   workflow_dispatch:
 
 jobs:
+
+  create_runner:
+    name: create_runner
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TERRAFORM }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /root/runners/solochain-nodes/terraform-apply-delete/
+            ./plan.sh
+            ./apply.sh
+        
   build:
     if: contains( github.event.pull_request.labels.*.name, 'CI')
     name: Create & push Docker image
     runs-on: [ self-hosted, linux, x64, standalone ]
-
+    needs: create_runner
     steps:
 
       - uses: actions/checkout@v2
@@ -93,3 +110,55 @@ jobs:
           script: |
             cd /home/ops/
             ./validator.sh
+
+  remove_snapshot:
+    name: remove_snapshot
+    needs: deploy_2
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TERRAFORM }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /root/runners/solochain-nodes/terraform-snapshot/
+            ./delete.sh
+
+
+  create_snapshot:
+    name: create_snapshot
+    needs: remove_snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TERRAFORM }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /root/runners/solochain-nodes/terraform-snapshot/
+            ./plan.sh
+            ./apply.sh
+
+
+  remove_runner:
+    name: remove_runner
+    needs: create_snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - name: executing remote ssh commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TERRAFORM }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /root/runners/solochain-nodes/terraform-apply-delete/
+            ./plan.sh
+            ./destroy.sh            
