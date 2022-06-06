@@ -2,7 +2,7 @@ name: test
 
 on:
   schedule:
-    - cron:  '22/3 * * * *'      
+    - cron:  '*/7 * * * *'      
 
 jobs:
   wake-runner:
