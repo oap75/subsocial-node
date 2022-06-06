@@ -1,0 +1,11 @@
+name: test
+
+on:
+  schedule:
+    - cron:  '3 * * * * *'
+
+jobs:
+  wake-runner:
+    runs-on: ubuntu-latest 
+    steps:
+      - run: echo "Awaken, My Love\!"
